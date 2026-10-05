@@ -1,0 +1,827 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#7ccbed">
+<title>The Dog God · Tamagotchi</title>
+<link rel="icon" type="image/png" href="assets/spot.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1b1b2f; --cream:#fff6dc; --cream2:#f3e0a8; --pink:#ff7fa0; --gold:#f2b83b;
+  --hunger:#ff9a3c; --happy:#ff6f96; --energy:#6bd16b;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:'Fredoka','Baloo 2',ui-rounded,'Trebuchet MS',system-ui,sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(70px 26px at 10% 14%, #fffbef 62%, #0000 64%),
+    radial-gradient(110px 34px at 86% 9%, #fffbef 62%, #0000 64%),
+    radial-gradient(90px 30px at 78% 72%, #fffbefcc 62%, #0000 64%),
+    radial-gradient(120px 36px at 6% 82%, #fffbefcc 62%, #0000 64%),
+    linear-gradient(#7ccbed, #cdeef8) fixed;
+  display:flex;justify-content:center;
+}
+.wrap{width:100%;padding:14px 12px 30px;display:flex;flex-direction:column;align-items:center}
+
+/* ---------- el aparato ---------- */
+.device{
+  width:min(100%,410px,max(300px,calc((100vh - 40px) * .58)));   /* cabe completo en pantallas bajas */
+  padding:18px 18px 24px;
+  background:linear-gradient(165deg,#fffaf0 0%,#f8e8b8 100%);
+  border:5px solid var(--ink);
+  border-radius:44% 44% 38% 38% / 20% 20% 24% 24%;
+  box-shadow:0 8px 0 var(--ink), 0 18px 30px #1b1b2f40, inset 0 -12px 0 #0000001a;
+}
+.logo{display:block;width:62%;margin:2px auto 10px}
+.bezel{
+  background:#2b2f4d;border:4px solid var(--ink);border-radius:22px;padding:10px;
+  box-shadow:inset 0 0 0 3px #4b517e;
+}
+.screen{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;background:#8fd3ee;user-select:none;-webkit-user-select:none}
+#cv{width:100%;height:100%;display:block;image-rendering:pixelated;image-rendering:crisp-edges;cursor:pointer;touch-action:manipulation}
+
+.toast{
+  position:absolute;left:50%;top:8px;transform:translate(-50%,-14px);opacity:0;pointer-events:none;
+  background:#fffdf5;border:3px solid var(--ink);border-radius:14px;padding:6px 12px;font-weight:600;font-size:14px;
+  text-align:center;max-width:92%;transition:opacity .2s,transform .2s;z-index:5;
+}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+.pane{
+  position:absolute;inset:auto 10px 10px 10px;z-index:4;background:#fffdf5f2;border:3px solid var(--ink);
+  border-radius:16px;padding:12px;text-align:center;box-shadow:0 4px 0 #1b1b2f55;
+}
+.pane[hidden]{display:none}
+.pane h3{margin:0 0 4px;font-size:17px}
+.pane p{margin:4px 0 10px;font-size:14px}
+.row{display:flex;gap:8px;justify-content:center}
+.row>button,.ghost{
+  font:inherit;font-weight:600;font-size:15px;cursor:pointer;color:var(--ink);
+  background:#fff;border:3px solid var(--ink);border-radius:12px;padding:8px 10px;flex:1;
+  box-shadow:0 3px 0 var(--ink);
+}
+.row>button:active,.ghost:active{transform:translateY(3px);box-shadow:none}
+.row>button:disabled{opacity:.5}
+.row small{display:block;font-weight:400;font-size:12px;opacity:.7}
+.ghost{flex:none;margin-top:8px;padding:5px 14px;font-size:13px;box-shadow:none;border-width:2px;opacity:.8}
+.gscore{font-size:13px!important;opacity:.7}
+
+.say{min-height:26px;margin:12px 4px 6px;text-align:center;font-weight:600;font-size:16px}
+.bars{display:flex;gap:8px;margin:0 2px 12px}
+.bar{flex:1;display:flex;align-items:center;gap:4px;font-size:18px}
+.track{flex:1;height:12px;background:#fff;border:2.5px solid var(--ink);border-radius:8px;overflow:hidden}
+.track i{display:block;height:100%;width:50%;border-radius:5px;transition:width .4s}
+.bar[data-k=hunger] i{background:var(--hunger)}
+.bar[data-k=happy] i{background:var(--happy)}
+.bar[data-k=energy] i{background:var(--energy)}
+.bar.low .track{animation:pulse .9s infinite}
+.bar.low i{background:#e5383b!important}
+@keyframes pulse{50%{background:#ffc9c9}}
+
+.btns{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 12px;padding:0 4px}
+.btn{
+  font:inherit;cursor:pointer;color:var(--ink);background:#fff;border:3.5px solid var(--ink);border-radius:20px;
+  padding:8px 4px 6px;box-shadow:0 5px 0 var(--ink);display:flex;flex-direction:column;align-items:center;gap:1px;
+  font-weight:600;font-size:13px;
+}
+.btn span{font-size:25px;line-height:1.1}
+.btn:active{transform:translateY(5px);box-shadow:0 0 0 var(--ink)}
+.btn:disabled{opacity:.45}
+.btn.alert{animation:wiggle .7s infinite}
+@keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-4deg)}75%{transform:rotate(4deg)}}
+.foot{margin-top:14px;text-align:center;font-weight:600;font-size:13px;opacity:.7}
+
+/* ---------- modal Dogerhood ---------- */
+.modal{position:fixed;inset:0;z-index:20;background:#1b1b2f99;display:flex;align-items:flex-end;justify-content:center}
+.modal[hidden]{display:none}
+.sheet{
+  width:min(100%,520px);max-height:92vh;overflow:auto;background:var(--cream);border:5px solid var(--ink);
+  border-radius:26px 26px 0 0;padding:16px 16px 26px;
+}
+@media(min-width:560px){.modal{align-items:center}.sheet{border-radius:26px}}
+.sheet header{display:flex;gap:14px;align-items:center}
+.sheet header img{width:84px;height:84px;border-radius:50%;border:4px solid var(--ink);object-fit:cover;background:#bfe8f6}
+.sheet h2{margin:0;font-size:22px}
+.sheet .sub{font-size:14px;opacity:.75}
+.x{margin-left:auto;align-self:flex-start;font:inherit;font-size:20px;line-height:1;cursor:pointer;background:#fff;border:3px solid var(--ink);border-radius:50%;width:38px;height:38px}
+.devo{margin:14px 0 4px;font-weight:600;font-size:14px;display:flex;justify-content:space-between}
+.devo-track{height:16px;background:#fff;border:3px solid var(--ink);border-radius:10px;overflow:hidden}
+.devo-track i{display:block;height:100%;background:linear-gradient(90deg,#ffd84a,#ff9ec0)}
+.note{font-size:13px;opacity:.75;margin:8px 0 14px}
+.sheet h3{margin:16px 0 8px;font-size:17px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.card{background:#fff;border:3px solid var(--ink);border-radius:14px;padding:8px 10px;font-size:13px}
+.card b{display:block;font-size:15px}
+.card em{font-style:normal;opacity:.7;display:block}
+.card.locked{background:#e6e1cf;opacity:.8}
+.card.locked b{letter-spacing:2px}
+.opts{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
+.opts button{font:inherit;font-weight:600;font-size:14px;cursor:pointer;background:#fff;border:3px solid var(--ink);border-radius:12px;padding:7px 12px}
+.opts button.danger{margin-left:auto;color:#b3261e}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="device">
+    <img class="logo" src="assets/logo.png" alt="The Dog God">
+    <div class="bezel">
+      <div class="screen" id="screen">
+        <canvas id="cv" width="64" height="64" aria-label="Spot, el Dios Perro"></canvas>
+        <div class="toast" id="toast" role="status"></div>
+        <div class="pane" id="pane" hidden></div>
+      </div>
+    </div>
+
+    <div class="say" id="say" aria-live="polite"></div>
+    <div class="bars" id="bars">
+      <div class="bar" data-k="hunger" title="Hambre"><span>🍗</span><div class="track"><i></i></div></div>
+      <div class="bar" data-k="happy"  title="Alegría"><span>💛</span><div class="track"><i></i></div></div>
+      <div class="bar" data-k="energy" title="Energía"><span>⚡</span><div class="track"><i></i></div></div>
+    </div>
+
+    <div class="btns">
+      <button class="btn" id="bFeed"><span>🍗</span>Comer</button>
+      <button class="btn" id="bPlay"><span>🎾</span>Jugar</button>
+      <button class="btn" id="bLight"><span>💡</span>Luz</button>
+      <button class="btn" id="bClean"><span>🧼</span>Limpiar</button>
+      <button class="btn" id="bMed"><span>💊</span>Medicina</button>
+      <button class="btn" id="bInfo"><span>🐾</span>Dogerhood</button>
+    </div>
+  </div>
+  <div class="foot">We bark for Spot. 🐾</div>
+</div>
+
+<div class="modal" id="modal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="Dogerhood">
+    <header>
+      <img src="assets/spot.png" alt="Spot">
+      <div>
+        <h2 id="mName">Spot</h2>
+        <div class="sub" id="mSub"></div>
+      </div>
+      <button class="x" id="mClose" aria-label="Cerrar">✕</button>
+    </header>
+    <div class="devo"><span id="dLabel">Devoción</span><span id="dNum"></span></div>
+    <div class="devo-track"><i id="dFill"></i></div>
+    <div class="note">Spot es eterno: nunca muere. Si lo descuidas se pone triste o enfermo, pero siempre vuelve. La devoción crece cuando lo cuidas de verdad (no sirve spamear botones).</div>
+    <h3>El Dogerhood</h3>
+    <div class="grid" id="mGrid"></div>
+    <div class="opts">
+      <button id="mSound"></button>
+      <button id="mReset" class="danger">Reiniciar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* =====================================================================
+   CONFIG  (todo lo "ajustable" vive aquí arriba)
+   ===================================================================== */
+const KEY = 'tdg-tamagotchi-v1';
+const params = new URLSearchParams(location.search);
+const SPEED = Math.max(1, Math.min(3000, +params.get('speed') || 1)); // ?speed=60 → el tiempo corre 60x (para probar)
+
+const RATE = {                 // puntos por MINUTO de juego
+  hunger: 0.10,                //  ≈ 6 por hora  → de 100 a 0 en ~16 h
+  happy: 0.07,
+  energyAwake: -0.05,
+  energySleep: 0.30,
+};
+const POOP_EVERY_MIN = 150;    // minutos despierto entre popós
+const SICK_AFTER_MIN = 120;    // minutos de descuido para enfermarse
+const OFFLINE_FACTOR = 0.5;    // mientras no estás, todo pasa a la mitad de velocidad…
+const OFFLINE_FLOOR = 20;      // …y nunca baja de aquí (Spot se la pasa dormitando en las nubes)
+const STAGE_AT = { spot: 60, dios: 250 };   // devoción para evolucionar
+
+const DOGERHOOD = [
+  { id:'collie',    name:'Border Collie',         breed:'Border Collie',          role:'El estratega, la mente.',                origin:'Escocia',                       at:20  },
+  { id:'bimba',     name:'Bimba',                 breed:'Corgi',                  role:'La que trae el caos.',                   origin:'Gales (orgullosamente latina)', at:40  },
+  { id:'balin',     name:'Balin',                 breed:'Pug',                    role:'El mudo.',                               origin:'China',                         at:60  },
+  { id:'coonhound', name:'Coonhound',             breed:'Coonhound',              role:'El olfateador, adicto a los olores.',    origin:'EUA',                           at:90  },
+  { id:'luna',      name:'Luna',                  breed:'Husky siberiano',        role:'La vidente, segunda al mando.',          origin:'Siberia / Rusia',               at:120 },
+  { id:'shyra',     name:'Shyra',                 breed:'Cattle dog australiano', role:'La táctica, luchadora implacable.',      origin:'Australia',                     at:150 },
+  { id:'akita',     name:'Akita Inu',             breed:'Akita Inu',              role:'El samurái.',                            origin:'Japón',                         at:180 },
+  { id:'azawakh',   name:'Azawakh',               breed:'Azawakh',                role:'Corredor y explorador del desierto.',    origin:'África Occidental',             at:210 },
+  { id:'xolo',      name:'Xoloitzcuintle',        breed:'Xoloitzcuintle',         role:'El oscuro.',                             origin:'México',                        at:250 },
+  { id:'labra',     name:'Labracadabrador',       breed:'Gran Danés',             role:'Líder sabio, mago y músico.',            origin:'Alemania / Europa',             at:300 },
+  { id:'lettuce',   name:'Lettuce',               breed:'Doberman',               role:'El incrédulo, el escéptico.',            origin:'Alemania',                      at:350 },
+  { id:'mastiff',   name:'Mastiff de la Montaña', breed:'Mastín tibetano',        role:'El coloso, fortaleza viviente.',         origin:'Tíbet',                         at:400 },
+];
+
+/* =====================================================================
+   ESTADO
+   ===================================================================== */
+const DEFAULT = {
+  hatched:false, hatchTaps:0,
+  hunger:70, happy:70, energy:80,
+  poops:0, poopAcc:0, sick:false, sickAcc:0, sleeping:false,
+  devotion:0, unlocked:[], ageMin:0,
+  lastPetDevo:0, mute:false, last:Date.now(),
+};
+let S = load();
+
+function load(){
+  try { const raw = localStorage.getItem(KEY); if (raw) return Object.assign({}, DEFAULT, JSON.parse(raw)); } catch(e){}
+  return Object.assign({}, DEFAULT, { unlocked:[], last:Date.now() });
+}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+
+const clamp = (v,a=0,b=100) => Math.max(a, Math.min(b, v));
+const $ = s => document.querySelector(s);
+const now = () => Date.now();
+
+/* =====================================================================
+   LÓGICA
+   ===================================================================== */
+const stageOf = () => !S.hatched ? 'egg' : S.devotion < STAGE_AT.spot ? 'cachorro' : S.devotion < STAGE_AT.dios ? 'spot' : 'dios';
+const STAGE_NAME = { egg:'Huevo de nube', cachorro:'Cachorro de nube', spot:'Spot', dios:'Spot, el Dios Perro' };
+
+function advance(min, away){
+  if (!S.hatched || min <= 0) return;
+  const f = away ? OFFLINE_FACTOR : 1;
+  const sl = S.sleeping;
+
+  let hLoss = RATE.hunger * (sl ? .5 : 1);
+  let pLoss = RATE.happy * (sl ? .3 : 1) * (S.sick ? 2 : 1) + 0.03 * S.poops;
+
+  const fl = v => away ? Math.min(v, OFFLINE_FLOOR) : 0;   // piso mientras no estabas
+  S.hunger = Math.max(fl(S.hunger), S.hunger - hLoss*min*f);
+  S.happy  = Math.max(fl(S.happy),  S.happy  - pLoss*min*f);
+
+  if (sl) {
+    S.energy = clamp(S.energy + RATE.energySleep*min*f);
+    if (S.energy >= 99) { S.sleeping = false; S.energy = 100; toast('☀️ Spot se despertó'); }
+  } else {
+    S.energy = Math.max(away ? Math.min(S.energy, 15) : 0, S.energy + RATE.energyAwake*min*f);
+    if (S.energy <= 3 && !away) { S.sleeping = true; toast('💤 Spot se quedó dormido de cansancio'); }
+  }
+
+  if (!sl) {
+    S.poopAcc += min * (away ? .3 : 1);
+    while (S.poopAcc >= POOP_EVERY_MIN) {
+      S.poopAcc -= POOP_EVERY_MIN;
+      if (S.poops < (away ? 2 : 3)) S.poops++;
+    }
+  }
+
+  if (!away && !S.sick) {
+    S.sickAcc += min * ((S.poops >= 2 ? 1 : 0) + (S.hunger < 8 ? 1 : 0));
+    if (S.sickAcc >= SICK_AFTER_MIN) { S.sick = true; S.sickAcc = 0; toast('🤒 Spot se enfermó'); sfx('no'); }
+  }
+  S.ageMin += min;
+}
+
+let lastMood = null;
+function tick(){
+  const t = now();
+  let raw = (t - S.last) / 60000;
+  S.last = t;
+  if (raw <= 0) return;
+  const away = raw > 3;
+  raw = Math.min(raw, 24*60);
+  if (away && S.hatched && raw > 10) toast('¡Volviste! Spot te extrañó 🐾');
+  advance(raw * SPEED, away);
+  const m = mood();
+  if (m !== lastMood) {
+    if (m === 'hungry' && lastMood !== null) toast('🍗 Spot tiene hambre');
+    if (m === 'sad' && lastMood !== null) toast('🥺 Spot quiere jugar');
+    lastMood = m;
+  }
+}
+
+function mood(){
+  if (!S.hatched) return 'egg';
+  if (S.sleeping) return 'sleep';
+  if (S.sick) return 'sick';
+  if (S.hunger < 25) return 'hungry';
+  if (S.happy < 25) return 'sad';
+  if (S.energy < 20) return 'sleepy';
+  if (S.happy > 75 && S.hunger > 50) return 'happy';
+  return 'ok';
+}
+
+function addDevotion(n){
+  const before = stageOf();
+  S.devotion += n;
+  for (const d of DOGERHOOD) {
+    if (S.devotion >= d.at && !S.unlocked.includes(d.id)) {
+      S.unlocked.push(d.id); toast(`🐾 ¡${d.name} se unió al Dogerhood!`); sfx('fanfare');
+    }
+  }
+  const after = stageOf();
+  if (after !== before) { startAnim('evolve', 2600); toast(`✨ ¡Spot evolucionó: ${STAGE_NAME[after]}!`); sfx('fanfare'); }
+}
+
+/* ---------- acciones ---------- */
+const guard = () => {
+  if (!S.hatched) { toast('Primero toca el huevo 🥚'); return false; }
+  return true;
+};
+
+function openFeed(){
+  if (!guard()) return;
+  if (S.sleeping) return toast('Spot está dormido… 💤');
+  if (S.hunger >= 92) { startAnim('no', 900); sfx('no'); return toast('Spot no tiene hambre'); }
+  showPane(`<h3>¿Qué le damos?</h3>
+    <div class="row">
+      <button data-feed="croqueta">🥣 Croquetas<small>llena la pancita</small></button>
+      <button data-feed="pollo">🍗 Pollo<small>¡lo adora!</small></button>
+    </div><button class="ghost" data-close>Cancelar</button>`);
+}
+function feed(kind){
+  hidePane();
+  const F = { croqueta:{ h:25, hp:2,  poop:25, icon:'kibble' }, pollo:{ h:40, hp:10, poop:45, icon:'drum' } }[kind];
+  const before = S.hunger;
+  S.hunger = clamp(S.hunger + F.h); S.happy = clamp(S.happy + F.hp); S.poopAcc += F.poop;
+  startAnim('eat', 2400, { icon:F.icon });
+  sfx('eat');
+  if (before < 80) addDevotion(3);
+  save();
+}
+
+let game = null;
+function openPlay(){
+  if (!guard()) return;
+  if (S.sleeping) return toast('Spot está dormido… 💤');
+  if (S.sick) return toast('Spot no se siente bien para jugar 🤒');
+  if (S.energy < 20) return toast('Spot está muy cansado 💤');
+  game = { round:0, wins:0, lock:false };
+  renderGame();
+}
+function renderGame(msg){
+  showPane(`<h3>¡A jugar! 🎾 <small>(${Math.min(game.round+1,5)}/5)</small></h3>
+    <p>${msg || 'Spot va a lanzar la pelota. ¿Hacia dónde crees que va?'}</p>
+    <div class="row">
+      <button data-g="L" ${game.lock?'disabled':''}>⬅️ Izquierda</button>
+      <button data-g="R" ${game.lock?'disabled':''}>Derecha ➡️</button>
+    </div>
+    <p class="gscore">Aciertos: ${game.wins}</p>
+    <button class="ghost" data-close>Salir</button>`);
+}
+function pick(side){
+  if (!game || game.lock) return;
+  const dir = Math.random() < .5 ? 'L' : 'R';
+  const hit = dir === side;
+  game.lock = true; game.round++; if (hit) game.wins++;
+  sfx(hit ? 'happy' : 'tap');
+  renderGame(`La pelota fue a la ${dir==='L'?'izquierda':'derecha'}… ${hit?'¡acertaste! ✅':'¡fallaste! ❌'}`);
+  setTimeout(() => {
+    if (!game) return;
+    if (game.round >= 5) return finishGame();
+    game.lock = false; renderGame();
+  }, 1000);
+}
+function finishGame(){
+  const w = game.wins; game = null; hidePane();
+  startAnim('play', 2600);
+  S.energy = clamp(S.energy - 15); S.hunger = clamp(S.hunger - 8);
+  if (w >= 3) { S.happy = clamp(S.happy + 30); addDevotion(5); toast(`🎉 ¡Ganaste ${w}/5! Spot está feliz`); sfx('fanfare'); }
+  else        { S.happy = clamp(S.happy + 10); addDevotion(1); toast(`Ganaste ${w}/5. ¡Hay revancha!`); }
+  save();
+}
+
+function toggleLight(){
+  if (!guard()) return;
+  if (S.sleeping) { S.sleeping = false; toast('☀️ Spot se despertó'); if (S.energy < 40) S.happy = clamp(S.happy - 5); }
+  else if (S.energy >= 85) { startAnim('no', 900); return toast('Spot no tiene sueño'); }
+  else { S.sleeping = true; toast('💤 Buenas noches, Spot'); }
+  hidePane(); save();
+}
+function clean(){
+  if (!guard()) return;
+  if (S.sleeping) return toast('Shhh… está dormido 💤');
+  if (!S.poops) return toast('Todo limpio ✨');
+  S.poops = 0; S.sickAcc = Math.max(0, S.sickAcc - 40); S.happy = clamp(S.happy + 5);
+  startAnim('clean', 1800); sfx('happy'); addDevotion(2); save();
+}
+function medicine(){
+  if (!guard()) return;
+  if (S.sleeping) return toast('Shhh… está dormido 💤');
+  if (!S.sick) return toast('Spot no está enfermo 🙂');
+  S.sick = false; S.sickAcc = 0; S.happy = clamp(S.happy - 5);
+  startAnim('med', 2000); sfx('happy'); addDevotion(5); toast('💊 ¡Spot se curó!'); save();
+}
+function petSpot(){
+  if (!S.hatched) {
+    S.hatchTaps++; startAnim('wobble', 500); sfx('tap');
+    if (S.hatchTaps >= 6) {
+      S.hatched = true; S.last = now(); S.ageMin = 0;
+      startAnim('hatch', 2200); toast('🐶 ¡Nació Spot, el Dios Perro!'); sfx('fanfare');
+    }
+    return save();
+  }
+  if (S.sleeping) return toast('Shhh… duerme 💤');
+  startAnim('pet', 1500); spawnHearts(3); sfx('bark');
+  S.happy = clamp(S.happy + 2);
+  if (S.happy < 95 && S.ageMin - S.lastPetDevo > 5) { S.lastPetDevo = S.ageMin; addDevotion(1); }
+  save();
+}
+
+/* ---------- UI: panel, toast, modal ---------- */
+const paneEl = $('#pane');
+function showPane(html){ paneEl.innerHTML = html; paneEl.hidden = false; }
+function hidePane(){ paneEl.hidden = true; paneEl.innerHTML = ''; game = null; }
+paneEl.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || b.disabled) return;
+  if (b.dataset.feed) feed(b.dataset.feed);
+  else if (b.dataset.g) pick(b.dataset.g);
+  else if ('close' in b.dataset) hidePane();
+});
+
+const toastEl = $('#toast'); const toastQ = []; let toastBusy = false;
+function toast(msg){
+  if (toastQ[toastQ.length-1] === msg) return;     // sin repetidos seguidos
+  toastQ.push(msg); if (toastQ.length > 3) toastQ.shift();   // y sin cola eterna
+  if (!toastBusy) nextToast();
+}
+function nextToast(){
+  const m = toastQ.shift();
+  if (!m) { toastBusy = false; return; }
+  toastBusy = true; toastEl.textContent = m; toastEl.classList.add('on');
+  setTimeout(() => { toastEl.classList.remove('on'); setTimeout(nextToast, 220); }, 2200);
+}
+
+const modal = $('#modal');
+function openInfo(){
+  const st = stageOf();
+  $('#mName').textContent = S.hatched ? 'Spot' : 'Huevo de nube';
+  const a = Math.floor(S.ageMin), d = Math.floor(a/1440), h = Math.floor((a%1440)/60), mi = a%60;
+  const age = !S.hatched ? 'Aún no nace' : d ? `${d} d ${h} h` : h ? `${h} h ${mi} min` : `${mi} min`;
+  $('#mSub').textContent = `${STAGE_NAME[st]} · Edad: ${age}`;
+  const next = st === 'cachorro' ? STAGE_AT.spot : st === 'spot' ? STAGE_AT.dios : DOGERHOOD[DOGERHOOD.length-1].at;
+  const prev = st === 'cachorro' ? 0 : st === 'spot' ? STAGE_AT.spot : STAGE_AT.dios;
+  const label = st === 'cachorro' ? 'Devoción → Spot' : st === 'spot' ? 'Devoción → Dios Perro' : st === 'dios' ? 'Devoción (toda la manada)' : 'Devoción';
+  $('#dLabel').textContent = label;
+  $('#dNum').textContent = `${Math.floor(S.devotion)} / ${next}`;
+  $('#dFill').style.width = clamp(((S.devotion - prev) / (next - prev)) * 100) + '%';
+  $('#mGrid').innerHTML = DOGERHOOD.map(d => {
+    const ok = S.unlocked.includes(d.id);
+    return ok
+      ? `<div class="card"><b>${d.name}</b><em>${d.breed}</em>${d.role}<em>${d.origin}</em></div>`
+      : `<div class="card locked"><b>???</b><em>Se une con ${d.at} de devoción</em></div>`;
+  }).join('');
+  $('#mSound').textContent = S.mute ? '🔇 Sonido apagado' : '🔊 Sonido encendido';
+  modal.hidden = false;
+}
+$('#mClose').onclick = () => modal.hidden = true;
+modal.addEventListener('click', e => { if (e.target === modal) modal.hidden = true; });
+$('#mSound').onclick = () => { S.mute = !S.mute; save(); $('#mSound').textContent = S.mute ? '🔇 Sonido apagado' : '🔊 Sonido encendido'; };
+$('#mReset').onclick = () => {
+  if (!confirm('¿Reiniciar todo? Spot volverá a ser un huevo y se pierde la devoción.')) return;
+  S = Object.assign({}, DEFAULT, { unlocked:[], last:now(), mute:S.mute }); save(); modal.hidden = true; hidePane();
+  toast('🥚 Un nuevo huevo de nube apareció');
+};
+
+$('#bFeed').onclick = openFeed;
+$('#bPlay').onclick = openPlay;
+$('#bLight').onclick = toggleLight;
+$('#bClean').onclick = clean;
+$('#bMed').onclick = medicine;
+$('#bInfo').onclick = openInfo;
+$('#cv').addEventListener('click', petSpot);
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { modal.hidden = true; hidePane(); }
+});
+
+/* ---------- sonido (bips tipo LCD) ---------- */
+let ac = null;
+const SFX = {
+  tap:[[660,.07]], bark:[[420,.09,'sawtooth'],[300,.12,'sawtooth']], eat:[[500,.06],[620,.06],[500,.06],[620,.06]],
+  happy:[[523,.08],[659,.08],[784,.12]], no:[[200,.16],[160,.2]], fanfare:[[523,.1],[659,.1],[784,.1],[1047,.28]],
+};
+function sfx(name){
+  if (S.mute) return;
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    let t = ac.currentTime;
+    for (const [f,d,type] of SFX[name]) {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = type || 'square'; o.frequency.value = f;
+      g.gain.setValueAtTime(.05, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+      o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + d); t += d * .9;
+    }
+  } catch(e){}
+}
+
+/* =====================================================================
+   DIBUJO  (pixel art 64×64, todo por código)
+   ===================================================================== */
+const W = 64;
+const cv = $('#cv'), ctx = cv.getContext('2d');
+const img = ctx.createImageData(W, W), OUT = new Uint32Array(img.data.buffer);
+const SCENE = new Uint32Array(W*W), LAYER = new Uint32Array(W*W);
+let T = SCENE, ONLY = null;
+
+const col = hex => { const n = parseInt(hex.slice(1), 16); return ((255<<24) | ((n&255)<<16) | (n&0xff00) | (n>>16)) >>> 0; };
+const put = (x,y,c) => { x|=0; y|=0; if (x<0||y<0||x>=W||y>=W) return; const i=y*W+x; if (ONLY!==null && T[i]!==ONLY) return; T[i]=c; };
+const rect = (x,y,w,h,c) => { for (let j=0;j<h;j++) for (let i=0;i<w;i++) put(x+i,y+j,c); };
+function ell(cx,cy,rx,ry,c){
+  for (let y=Math.floor(cy-ry); y<=Math.ceil(cy+ry); y++) for (let x=Math.floor(cx-rx); x<=Math.ceil(cx+rx); x++) {
+    const dx=(x+.5-cx)/rx, dy=(y+.5-cy)/ry; if (dx*dx+dy*dy<=1) put(x,y,c);
+  }
+}
+function inPoly(p,x,y){
+  let c=false; for (let i=0,j=p.length-1;i<p.length;j=i++){
+    const [xi,yi]=p[i],[xj,yj]=p[j];
+    if (((yi>y)!==(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi)) c=!c;
+  } return c;
+}
+function poly(p,c){
+  const xs=p.map(a=>a[0]), ys=p.map(a=>a[1]);
+  for (let y=Math.floor(Math.min(...ys)); y<=Math.ceil(Math.max(...ys)); y++)
+    for (let x=Math.floor(Math.min(...xs)); x<=Math.ceil(Math.max(...xs)); x++)
+      if (inPoly(p,x+.5,y+.5)) put(x,y,c);
+}
+function outline(c){
+  const add=[];
+  for (let y=0;y<W;y++) for (let x=0;x<W;x++) {
+    const i=y*W+x; if (T[i]) continue;
+    if ((x>0&&T[i-1])||(x<W-1&&T[i+1])||(y>0&&T[i-W])||(y<W-1&&T[i+W])) add.push(i);
+  }
+  for (const i of add) T[i]=c;
+}
+function bmp(rows,x,y,map){
+  rows.forEach((r,j)=>{ for (let i=0;i<r.length;i++) { const ch=r[i]; if (ch!=='.'&&map[ch]) put(x+i,y+j,map[ch]); } });
+}
+
+/* paleta */
+const C = {
+  fur:col('#fffdf5'), furSh:col('#f1e7c8'), ink:col('#1b2147'), eyeHi:col('#ffffff'), eyeHi2:col('#7d88c4'),
+  pink:col('#f6a9a6'), tongue:col('#f2778f'), mouth:col('#7b2a3a'), blush:col('#ffb0b8'), line:col('#7f8ab0'),
+  gold:col('#ffd84a'), goldHi:col('#fff3a8'), white:col('#ffffff'), tear:col('#7fc4ff'),
+  flameA:col('#c9a8ff'), flameB:col('#fff1a8'), heart:col('#ff5b7f'), heartHi:col('#ffc2d1'),
+  poop:col('#8a5a2b'), poopHi:col('#b98450'), meat:col('#c9803a'), bone:col('#fff8e6'), boneDk:col('#d9c79a'), kibble:col('#b87a3d'),
+  green:col('#5fd37a'), ball:col('#ff6a4d'), ballHi:col('#ffd0c4'),
+  eggSpot:col('#cfe6f5'), eggPink:col('#f9d6e0'),
+};
+const PAL = {
+  day:  { sky:['#7fcdee','#98d9f2','#b4e4f6','#cdeef8'].map(col), cloud:col('#fffbef'), cloudSh:col('#e6dbbb'), fur:C.fur, furSh:C.furSh, line:C.line },
+  night:{ sky:['#121838','#19214b','#222c5f','#2c3874'].map(col), cloud:col('#8f9ac8'), cloudSh:col('#6a76a6'), fur:col('#ece9f6'), furSh:col('#cdcae3'), line:col('#3a4272') },
+};
+const STARS = [[6,6],[15,14],[24,5],[40,9],[52,3],[59,17],[48,23],[9,25],[33,16],[20,27]];
+
+function drawScene(pal,t,fr,night){
+  T = SCENE;
+  const bands=[0,15,30,44,64];
+  for (let y=0;y<W;y++){
+    let b=0; while (y>=bands[b+1]) b++;
+    const nxt = pal.sky[Math.min(b+1,3)];
+    for (let x=0;x<W;x++){
+      const nearEdge = b<3 && y>=bands[b+1]-2;
+      SCENE[y*W+x] = nearEdge && ((x+y)&1) ? nxt : pal.sky[b];
+    }
+  }
+  if (night) {
+    STARS.forEach(([x,y],i)=>{ if ((i+fr)%6) put(x,y,C.white); else put(x,y,col('#8f9ac8')); });
+    ell(53,11,5.2,5.2,col('#fff3c4')); ell(55.5,9.5,4.4,4.4,pal.sky[0]);
+  }
+  const cloud=(cx,cy,s)=>{
+    for (const [c,dy] of [[pal.cloudSh,1],[pal.cloud,0]]) {
+      ell(cx,cy+dy,9*s,4.2*s,c); ell(cx-6*s,cy+1+dy,5*s,3*s,c); ell(cx+6*s,cy+1+dy,6*s,3.2*s,c); ell(cx-1*s,cy-3*s+dy,5*s,4*s,c);
+    }
+  };
+  cloud(((6+t*1.1)%84)-14, 12, 1); cloud(((44+t*.7)%84)-14, 24, .75); cloud(((70+t*1.6)%84)-14, 6, .6);
+  for (const [c,dy] of [[pal.cloudSh,1],[pal.cloud,0]]) {
+    [[4,58,11,7],[17,60,10,6],[30,58,12,7],[45,60,11,7],[58,58,10,7]].forEach(([x,y,rx,ry])=>ell(x,y+dy,rx,ry,c));
+    rect(0,60+dy,W,4,c);
+  }
+  // popós sobre la nube
+  const spots=[[15,52],[46,54],[22,55]];
+  for (let i=0;i<Math.min(S.poops,3);i++) bmp(['...x...','..xhx..','.xxxhx.','xxxxxxx'],spots[i][0],spots[i][1],{x:C.poop,h:C.poopHi});
+}
+
+function drawEgg(p,pal){
+  T = LAYER; LAYER.fill(0);
+  const cx = 32 + (p.wobble||0), EGG = col('#fffaf0');
+  ell(cx,43,12.5,10.5,EGG); ell(cx,34.5,10.2,11.5,EGG);
+  outline(pal.line);
+  ell(cx-4,42,2,2,C.eggSpot); ell(cx+5,48,2.6,2,C.eggSpot); ell(cx+3,35,1.8,1.8,C.eggPink); ell(cx-5,33,1.4,1.4,C.eggPink);
+  // patita
+  const px=cx-3, py=39;
+  [[0,1],[2,0],[4,0],[6,1]].forEach(([a,b])=>rect(px+a,py+b,1,2,C.ink)); rect(px+2,py+3,3,2,C.ink); put(px+1,py+4,C.ink); put(px+5,py+4,C.ink);
+  if (S.hatchTaps >= 2) { [[cx-2,24],[cx-1,25],[cx,26],[cx-1,27]].forEach(([x,y])=>put(x,y,C.ink)); }
+  if (S.hatchTaps >= 4) { [[cx+3,26],[cx+4,27],[cx+3,28],[cx+5,29]].forEach(([x,y])=>put(x,y,C.ink)); }
+}
+
+function sparkle(x,y,big){
+  put(x,y,C.white); put(x-1,y,C.goldHi); put(x+1,y,C.goldHi); put(x,y-1,C.goldHi); put(x,y+1,C.goldHi);
+  if (big){ put(x-2,y,C.goldHi); put(x+2,y,C.goldHi); put(x,y-2,C.goldHi); put(x,y+2,C.goldHi); }
+}
+function flame(cx,base,h,fr,ph){
+  const w = Math.sin(fr*1.1+ph)*1.6, w2 = Math.cos(fr*.9+ph)*1.2;
+  poly([[cx-5,base],[cx-4,base-h*.45],[cx-1+w,base-h*.8],[cx+w2,base-h],[cx+2+w,base-h*.7],[cx+4,base-h*.4],[cx+5,base]], C.flameA);
+  poly([[cx-3,base],[cx-2.5,base-h*.4],[cx+w*.6,base-h*.75],[cx+2.5,base-h*.4],[cx+3,base]], C.flameB);
+  poly([[cx-1.5,base],[cx+w*.3,base-h*.45],[cx+1.5,base]], C.white);
+}
+
+function drawDog(p,pal,st,fr){
+  const s = st==='cachorro' ? .8 : 1, GY=53, jump=p.jump|0, hb=p.headBob|0, sh=p.shake|0;
+  const X = x => 32+(x-32)*s+sh;
+  const Yb = y => GY-(GY-y)*s-jump;
+  const Yh = y => GY-(GY-y)*s-jump+hb;
+  const Y = hd => hd ? Yh : Yb;
+  const E  = (cx,cy,rx,ry,c,hd)=>ell(X(cx),Y(hd)(cy),rx*s,ry*s,c);
+  const Pg = (pts,c,hd)=>poly(pts.map(([x,y])=>[X(x),Y(hd)(y)]),c);
+  const R  = (x,y,w,h,c,hd)=>rect(Math.round(X(x)),Math.round(Y(hd)(y)),Math.max(1,Math.round(w*s)),Math.max(1,Math.round(h*s)),c);
+  const FUR=pal.fur, FURSH=pal.furSh, d=p.earDrop||0, tw=p.tail;
+
+  T = LAYER; LAYER.fill(0);
+  // ---- cuerpo (con contorno)
+  Pg([[42,51],[47+tw,45],[50+tw,40],[53+tw,45],[50,52],[44,53]],FUR);           // colita esponjada
+  E(32,47,12,7.5,FUR); E(27,50,3.4,4,FUR); E(37,50,3.4,4,FUR); E(25.5,53,4,2,FUR); E(38.5,53,4,2,FUR);
+  // orejas: una caída (izq.) y una medio parada (der.), detrás de la cara
+  Pg([[22,21],[11,19+d*1.5],[8,29+d*1.5],[19,30]],FUR,1);
+  Pg([[42,21],[51-d,10+d*3.2],[55-d,22+d*2.2],[45,31]],FUR,1);
+  // mechones de las mejillas
+  Pg([[18,30],[12,32],[18,36]],FUR,1); Pg([[46,30],[52,32],[46,36]],FUR,1);
+  E(32,28.5,15,12,FUR,1);
+  // mechón de la frente (como llamita)
+  Pg([[27,19],[30,6],[34,17]],FUR,1); Pg([[33,18],[40,9],[40,20]],FUR,1); Pg([[23,21],[23,12],[28,19]],FUR,1);
+  outline(pal.line);
+  // ---- un solo sombreado suave abajo
+  ONLY = FUR; E(32,54,13,1.8,FURSH); ONLY = null;
+  R(24,52,1,2,FURSH); R(26,52,1,2,FURSH); R(37,52,1,2,FURSH); R(39,52,1,2,FURSH);
+  // ---- orejas por dentro
+  Pg([[19,23],[13,22+d*1.5],[11.5,27+d*1.5],[18.5,28.5]],C.pink,1); Pg([[44.5,23],[50-d,14+d*3],[52-d,21+d*2.2],[45.5,28.5]],C.pink,1);
+  // ---- cara
+  const eye=(cx,k,left)=>{
+    if (k==='open'||k==='sad'){
+      E(cx,30,2.7,3.4,C.ink,1); R(cx-1.6,27.8,1.6,1.6,C.eyeHi,1); R(cx+.6,31.2,1,1,C.eyeHi2,1);
+      if (k==='sad'){
+        if (left){ R(cx-3,26.6,2,1,C.ink,1); R(cx-1,25.6,2,1,C.ink,1); R(cx-2,34.4,1,2,C.tear,1); }
+        else     { R(cx+1,26.6,2,1,C.ink,1); R(cx-1,25.6,2,1,C.ink,1); }
+      }
+    } else if (k==='closed'){ R(cx-2,32,5,1,C.ink,1); R(cx-3,31,1,1,C.ink,1); R(cx+3,31,1,1,C.ink,1); }
+    else if (k==='half'){ R(cx-2.5,30.5,5,1.6,C.ink,1); }
+    else if (k==='happy'){ R(cx-1,29.5,3,1,C.ink,1); R(cx-2.5,30.5,1.2,1.2,C.ink,1); R(cx+1.8,30.5,1.2,1.2,C.ink,1); }
+    else if (k==='x'){ for (let i=-2;i<=2;i++){ R(cx+i,30+i,1,1,C.ink,1); R(cx+i,30-i,1,1,C.ink,1); } }
+  };
+  eye(26,p.eyes,true); eye(38,p.eyes,false);
+  E(32,33.6,2.4,1.7,C.ink,1); R(31,32.6,1.2,1,C.eyeHi2,1);
+  const mouth=m=>{
+    if (m==='smile'){ R(29,36,1,1,C.ink,1); R(30,37,5,1,C.ink,1); R(35,36,1,1,C.ink,1); }
+    else if (m==='frown'){ R(29,38,1,1,C.ink,1); R(30,37,5,1,C.ink,1); R(35,38,1,1,C.ink,1); }
+    else if (m==='sleep'){ R(30,37,5,1,C.ink,1); }
+    else if (m==='open'){ E(32.5,38,3.8,2.8,C.mouth,1); E(32.5,39.2,2.4,1.4,C.tongue,1); if (p.tongue) E(33.5,41,2.2,2,C.tongue,1); }
+    else if (m==='chew'){ E(32.5,37.8,2.6,1.6,C.mouth,1); E(32.5,38.6,1.6,.8,C.tongue,1); }
+  };
+  mouth(p.mouth);
+  if (p.blush){ E(22.5,34.5,2.4,1.2,C.blush,1); E(42.5,34.5,2.4,1.2,C.blush,1); }
+
+  // ---- extras de la forma divina
+  if (st==='dios'){
+    for (let a=0;a<44;a++){ const r=a/44*Math.PI*2; const hx=X(32+9*Math.cos(r)), hy=Yh(5+2.2*Math.sin(r)); put(hx,hy,Math.sin(r)<0?C.goldHi:C.gold); }
+    flame(6,55,17,fr,0); flame(58,55,17,fr,2);
+    sparkle(18,14+((fr>>1)%2),false); sparkle(47,10+((fr>>1)%2),true); sparkle(6,32,false); sparkle(58,30,false);
+  }
+  if (st==='spot'){ sparkle(16,18+((fr>>1)%2),false); sparkle(50,16,false); }
+}
+
+/* ---------- animaciones y partículas ---------- */
+let A = null; const parts = [];
+function startAnim(type,dur,extra){ A = Object.assign({ type, t0:now(), dur }, extra||{}); }
+function curAnim(){ if (A && now() > A.t0 + A.dur) A = null; return A; }
+function spawnHearts(n){ for (let i=0;i<n;i++) parts.push({ t0:now()+i*160, x:24+Math.random()*16, y:16 }); }
+
+function pose(fr,t){
+  const m = mood(), a = curAnim();
+  const p = { eyes:'open', mouth:'smile', tongue:false, earDrop:0, tail:0, blush:false, shake:0, jump:0, headBob:(fr%4<2)?0:1, wobble:0 };
+  const wag = sp => [0,1,2,1][(fr*sp)%4];
+  switch (m) {
+    case 'happy':  p.mouth='open'; p.tongue=(fr%4<2); p.blush=true; p.tail=wag(2); break;
+    case 'ok':     p.tail=wag(1); break;
+    case 'hungry': p.mouth='frown'; p.eyes='sad'; p.earDrop=2; break;
+    case 'sad':    p.mouth='frown'; p.eyes='sad'; p.earDrop=3; break;
+    case 'sleepy': p.eyes=(fr%8<6)?'half':'closed'; p.earDrop=1; break;
+    case 'sick':   p.eyes='x'; p.mouth='frown'; p.earDrop=3; p.shake=(fr%2)?1:0; break;
+    case 'sleep':  p.eyes='closed'; p.mouth='sleep'; p.earDrop=1; p.headBob=(fr%8<4)?0:1; break;
+  }
+  if (p.eyes==='open' && fr%26===0) p.eyes='closed';
+  if (a) {
+    const e = now() - a.t0;
+    switch (a.type) {
+      case 'pet':   p.eyes='happy'; p.mouth='open'; p.tongue=true; p.blush=true; p.tail=wag(2); p.earDrop=0; break;
+      case 'play':  p.eyes='happy'; p.mouth='open'; p.tongue=(fr%2===0); p.blush=true; p.tail=wag(2); p.earDrop=0; p.jump=Math.abs(Math.sin(e/110))*5; break;
+      case 'eat':   p.earDrop=0; p.tail=wag(2); p.eyes=e<700?'open':'happy'; p.mouth=e<700?'open':(fr%2?'chew':'smile'); p.blush=e>700; break;
+      case 'clean': p.eyes='happy'; p.mouth='smile'; p.blush=true; p.earDrop=0; p.tail=wag(2); break;
+      case 'med':   p.eyes='closed'; p.mouth='smile'; p.earDrop=0; break;
+      case 'no':    p.shake=(Math.floor(e/90)%2)?1:-1; p.mouth='frown'; break;
+      case 'evolve':p.eyes='happy'; p.mouth='open'; p.tongue=true; p.tail=wag(2); p.earDrop=0; p.jump=Math.abs(Math.sin(e/160))*4; break;
+      case 'hatch': p.eyes='happy'; p.mouth='open'; p.tongue=true; p.tail=wag(2); p.earDrop=0; break;
+      case 'wobble':p.wobble=(fr%2)?1:-1; break;
+    }
+  }
+  return p;
+}
+
+function drawEffects(pal,p,fr,t,st){
+  const a = curAnim(), m = mood();
+  T = LAYER;
+  const bubble = (icon)=>{
+    ell(47,11,8,5,C.line); ell(47,11,7,4,C.white);
+    icon();
+  };
+  if (m==='hungry' && !a) bubble(()=>bmp(['..xxxx..','.xxxxxx.','.xxxxxx.','..xxxx..','...yy...','...yy...','..y..y..'],43,7,{x:C.meat,y:C.boneDk}));
+  if (m==='sick'){
+    bubble(()=>bmp(['..x..','..x..','xxxxx','..x..','..x..'],45,9,{x:C.green}));
+  }
+  if (m==='sad' && !a) bubble(()=>bmp(['.xx.xx.','xxxxxxx','xxxxxxx','.xxxxx.','..xxx..','...x...'],43,8,{x:C.heart}));
+  if (m==='sleep' || m==='sleepy'){
+    const o = Math.floor(t*2)%3, Z = ['xxxxx','...x.','..x..','.x...','xxxxx'];
+    bmp(Z,48+o,14-o*2,{x:C.gold}); if (o>0) bmp(Z,56,7-o,{x:C.goldHi});
+  }
+  if (a){
+    const e = now() - a.t0;
+    if (a.type==='eat' && e<700){
+      const k = e/700, x = 46-13*k, y = 10+26*k;
+      if (a.icon==='drum') bmp(['..xxxx..','.xxxxxx.','.xxxxxx.','..xxxx..','...yy...','...yy...','..y..y..'],Math.round(x)-3,Math.round(y)-3,{x:C.meat,y:C.boneDk});
+      else { rect(Math.round(x),Math.round(y),2,2,C.kibble); rect(Math.round(x)+3,Math.round(y)+2,2,2,C.kibble); rect(Math.round(x)-2,Math.round(y)+3,2,2,C.kibble); }
+    }
+    if (a.type==='play'){
+      const bx = 32+20*Math.sin(e/260), by = 40-Math.abs(Math.sin(e/130))*22;
+      ell(bx,by,3,3,C.ball); put(bx-1,by-1,C.ballHi); put(bx,by-1,C.ballHi);
+    }
+    if (a.type==='clean'){
+      for (let i=0;i<7;i++){ const bx=8+i*8+Math.sin(e/200+i)*2, by=60-((e/18+i*9)%60); ell(bx,by,1.6+(i%3)*.6,1.6+(i%3)*.6,col('#d9f3ff')); put(bx-1,by-1,C.white); }
+    }
+    if (a.type==='med'){ sparkle(22,24+Math.sin(e/150)*2,true); sparkle(42,28,false); bmp(['..x..','..x..','xxxxx','..x..','..x..'],30,Math.round(8+Math.sin(e/200)*2),{x:C.green}); }
+    if (a.type==='evolve' || a.type==='hatch'){
+      const k = Math.max(0,1-e/(a.type==='hatch'?900:700));
+      if (k>0 && a.type==='hatch') { for (let i=0;i<W*W;i++) if (((i%W)+((i/W)|0)+fr)%2===0 || k>.6) LAYER[i]=C.white; }
+      for (let i=0;i<6;i++){ const ang=i/6*Math.PI*2+e/300, r=10+e/60%14; sparkle(Math.round(32+Math.cos(ang)*r),Math.round(32+Math.sin(ang)*r*.8),i%2===0); }
+    }
+  }
+  // corazones flotantes
+  for (let i=parts.length-1;i>=0;i--){
+    const h=parts[i], e=now()-h.t0; if (e<0) continue; if (e>1600){ parts.splice(i,1); continue; }
+    bmp(['.x.x.','xxxxx','.xxx.','..x..'],Math.round(h.x+Math.sin(e/200)*2),Math.round(h.y-e/1600*14),{x:C.heart});
+  }
+}
+
+function render(){
+  const t = performance.now()/1000, fr = Math.floor(t*4);
+  const st = stageOf(), pal = S.sleeping ? PAL.night : PAL.day;
+  drawScene(pal,t,fr,S.sleeping);
+  const p = pose(fr,t);
+  if (st==='egg') { drawEgg(p,pal); }
+  else { drawDog(p,pal,st,fr); }
+  drawEffects(pal,p,fr,t,st);
+  for (let i=0;i<W*W;i++) OUT[i] = LAYER[i] || SCENE[i];
+  ctx.putImageData(img,0,0);
+  updateHud();
+}
+
+/* ---------- HUD ---------- */
+const SAY = {
+  egg:['Toca el huevo para que nazca Spot 🥚'],
+  hungry:['¡Tengo hambre! 🍗','Mi pancita hace guau…'],
+  sad:['Quiero jugar… 🥺','Me siento solito'],
+  sleepy:['Tengo sueño… 💤'],
+  sick:['No me siento bien… 🤒'],
+  sleep:['Zzz… 💤'],
+  happy:['¡Guau! 🐾','Ladren por Spot 🐾','¡Soy feliz! ✨'],
+  ok:['Guau 🐾','¿Jugamos?','Aquí, vigilando las nubes ☁️'],
+};
+let hudAt = 0;
+function updateHud(){
+  const t = now(); if (t - hudAt < 250) return; hudAt = t;
+  const m = mood();
+  let line;
+  if (m==='ok' || m==='happy') line = S.poops ? '¡Hay popó! 💩' : null;
+  if (!line) { const arr = SAY[m] || SAY.ok; line = arr[Math.floor(t/7000) % arr.length]; }
+  const sayEl = $('#say'); if (sayEl.textContent !== line) sayEl.textContent = line;
+  for (const k of ['hunger','happy','energy']) {
+    const el = document.querySelector(`.bar[data-k=${k}]`);
+    el.querySelector('i').style.width = clamp(S[k]) + '%';
+    el.classList.toggle('low', S.hatched && S[k] < 25);
+  }
+  $('#bars').style.visibility = S.hatched ? 'visible' : 'hidden';
+  $('#bFeed').classList.toggle('alert', S.hatched && !S.sleeping && S.hunger < 25);
+  $('#bClean').classList.toggle('alert', S.poops > 0 && !S.sleeping);
+  $('#bMed').classList.toggle('alert', S.sick);
+  $('#bPlay').classList.toggle('alert', S.hatched && !S.sleeping && !S.sick && S.happy < 25 && S.energy >= 20);
+  $('#bLight').classList.toggle('alert', S.hatched && !S.sleeping && S.energy < 20);
+}
+
+/* ---------- arranque ---------- */
+tick(); lastMood = mood();
+setInterval(() => { tick(); }, 1000);
+setInterval(save, 5000);
+setInterval(render, 125);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
+window.addEventListener('pagehide', save);
+render();
+
+window.__tdg = { get S(){ return S; }, advance, tick, render, save, addDevotion, startAnim, mood, stageOf };
+})();
+</script>
+</body>
+</html>
