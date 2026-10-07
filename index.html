@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#7ccbed">
-<title>The Dog God · Tamagotchi</title>
+<title>The Dog God · Tamagodchi</title>
 <link rel="icon" type="image/png" href="assets/spot.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -26,11 +26,19 @@ body{
     linear-gradient(#7ccbed, #cdeef8) fixed;
   display:flex;justify-content:center;
 }
-.wrap{width:100%;padding:14px 12px 30px;display:flex;flex-direction:column;align-items:center}
+.wrap{
+  --w:min(100%,410px,max(300px,calc((100vh - 40px) * .58)));   /* ancho del aparato: cabe completo en pantallas bajas */
+  width:100%;padding:14px 12px 30px;display:flex;flex-direction:column;align-items:center;
+}
+.langbar{width:var(--w);display:flex;justify-content:flex-end;margin-bottom:8px}
+.lang{display:flex;background:#fffdf5;border:3px solid var(--ink);border-radius:999px;overflow:hidden;box-shadow:0 3px 0 var(--ink)}
+.lang button{font:inherit;font-weight:700;font-size:13px;color:var(--ink);background:transparent;border:0;padding:4px 12px;cursor:pointer}
+.lang button+button{border-left:3px solid var(--ink)}
+.lang button.on{background:var(--gold)}
 
 /* ---------- el aparato ---------- */
 .device{
-  width:min(100%,410px,max(300px,calc((100vh - 40px) * .58)));   /* cabe completo en pantallas bajas */
+  width:var(--w);
   padding:18px 18px 24px;
   background:linear-gradient(165deg,#fffaf0 0%,#f8e8b8 100%);
   border:5px solid var(--ink);
@@ -90,6 +98,7 @@ body{
   font-weight:600;font-size:13px;
 }
 .btn span{font-size:25px;line-height:1.1}
+.btn i{font-style:normal}
 .btn:active{transform:translateY(5px);box-shadow:0 0 0 var(--ink)}
 .btn:disabled{opacity:.45}
 .btn.alert{animation:wiggle .7s infinite}
@@ -127,11 +136,16 @@ body{
 </head>
 <body>
 <div class="wrap">
+  <div class="langbar">
+    <div class="lang" role="group" aria-label="Language / Idioma">
+      <button data-lang="en">EN</button><button data-lang="es">MX</button>
+    </div>
+  </div>
   <div class="device">
     <img class="logo" src="assets/logo.png" alt="The Dog God">
     <div class="bezel">
       <div class="screen" id="screen">
-        <canvas id="cv" width="64" height="64" aria-label="Spot, el Dios Perro"></canvas>
+        <canvas id="cv" width="64" height="64" data-i18n-aria="aria.canvas"></canvas>
         <div class="toast" id="toast" role="status"></div>
         <div class="pane" id="pane" hidden></div>
       </div>
@@ -139,21 +153,21 @@ body{
 
     <div class="say" id="say" aria-live="polite"></div>
     <div class="bars" id="bars">
-      <div class="bar" data-k="hunger" title="Hambre"><span>🍗</span><div class="track"><i></i></div></div>
-      <div class="bar" data-k="happy"  title="Alegría"><span>💛</span><div class="track"><i></i></div></div>
-      <div class="bar" data-k="energy" title="Energía"><span>⚡</span><div class="track"><i></i></div></div>
+      <div class="bar" data-k="hunger" data-i18n-title="bar.hunger"><span>🍗</span><div class="track"><i></i></div></div>
+      <div class="bar" data-k="happy"  data-i18n-title="bar.happy"><span>💛</span><div class="track"><i></i></div></div>
+      <div class="bar" data-k="energy" data-i18n-title="bar.energy"><span>⚡</span><div class="track"><i></i></div></div>
     </div>
 
     <div class="btns">
-      <button class="btn" id="bFeed"><span>🍗</span>Comer</button>
-      <button class="btn" id="bPlay"><span>🎾</span>Jugar</button>
-      <button class="btn" id="bLight"><span>💡</span>Luz</button>
-      <button class="btn" id="bClean"><span>🧼</span>Limpiar</button>
-      <button class="btn" id="bMed"><span>💊</span>Medicina</button>
-      <button class="btn" id="bInfo"><span>🐾</span>Dogerhood</button>
+      <button class="btn" id="bFeed"><span>🍗</span><i data-i18n="feed"></i></button>
+      <button class="btn" id="bPlay"><span>🎾</span><i data-i18n="play"></i></button>
+      <button class="btn" id="bLight"><span>💡</span><i data-i18n="light"></i></button>
+      <button class="btn" id="bClean"><span>🧼</span><i data-i18n="clean"></i></button>
+      <button class="btn" id="bMed"><span>💊</span><i data-i18n="med"></i></button>
+      <button class="btn" id="bInfo"><span>🐾</span><i data-i18n="info"></i></button>
     </div>
   </div>
-  <div class="foot">We bark for Spot. 🐾</div>
+  <div class="foot" data-i18n="foot"></div>
 </div>
 
 <div class="modal" id="modal" hidden>
@@ -164,16 +178,16 @@ body{
         <h2 id="mName">Spot</h2>
         <div class="sub" id="mSub"></div>
       </div>
-      <button class="x" id="mClose" aria-label="Cerrar">✕</button>
+      <button class="x" id="mClose" data-i18n-aria="close">✕</button>
     </header>
-    <div class="devo"><span id="dLabel">Devoción</span><span id="dNum"></span></div>
+    <div class="devo"><span id="dLabel"></span><span id="dNum"></span></div>
     <div class="devo-track"><i id="dFill"></i></div>
-    <div class="note">Spot es eterno: nunca muere. Si lo descuidas se pone triste o enfermo, pero siempre vuelve. La devoción crece cuando lo cuidas de verdad (no sirve spamear botones).</div>
-    <h3>El Dogerhood</h3>
+    <div class="note" data-i18n="note"></div>
+    <h3 data-i18n="dogerhoodH"></h3>
     <div class="grid" id="mGrid"></div>
     <div class="opts">
       <button id="mSound"></button>
-      <button id="mReset" class="danger">Reiniciar</button>
+      <button id="mReset" class="danger" data-i18n="reset"></button>
     </div>
   </div>
 </div>
@@ -201,20 +215,121 @@ const OFFLINE_FACTOR = 0.5;    // mientras no estás, todo pasa a la mitad de ve
 const OFFLINE_FLOOR = 20;      // …y nunca baja de aquí (Spot se la pasa dormitando en las nubes)
 const STAGE_AT = { spot: 60, dios: 250 };   // devoción para evolucionar
 
-const DOGERHOOD = [
-  { id:'collie',    name:'Border Collie',         breed:'Border Collie',          role:'El estratega, la mente.',                origin:'Escocia',                       at:20  },
-  { id:'bimba',     name:'Bimba',                 breed:'Corgi',                  role:'La que trae el caos.',                   origin:'Gales (orgullosamente latina)', at:40  },
-  { id:'balin',     name:'Balin',                 breed:'Pug',                    role:'El mudo.',                               origin:'China',                         at:60  },
-  { id:'coonhound', name:'Coonhound',             breed:'Coonhound',              role:'El olfateador, adicto a los olores.',    origin:'EUA',                           at:90  },
-  { id:'luna',      name:'Luna',                  breed:'Husky siberiano',        role:'La vidente, segunda al mando.',          origin:'Siberia / Rusia',               at:120 },
-  { id:'shyra',     name:'Shyra',                 breed:'Cattle dog australiano', role:'La táctica, luchadora implacable.',      origin:'Australia',                     at:150 },
-  { id:'akita',     name:'Akita Inu',             breed:'Akita Inu',              role:'El samurái.',                            origin:'Japón',                         at:180 },
-  { id:'azawakh',   name:'Azawakh',               breed:'Azawakh',                role:'Corredor y explorador del desierto.',    origin:'África Occidental',             at:210 },
-  { id:'xolo',      name:'Xoloitzcuintle',        breed:'Xoloitzcuintle',         role:'El oscuro.',                             origin:'México',                        at:250 },
-  { id:'labra',     name:'Labracadabrador',       breed:'Gran Danés',             role:'Líder sabio, mago y músico.',            origin:'Alemania / Europa',             at:300 },
-  { id:'lettuce',   name:'Lettuce',               breed:'Doberman',               role:'El incrédulo, el escéptico.',            origin:'Alemania',                      at:350 },
-  { id:'mastiff',   name:'Mastiff de la Montaña', breed:'Mastín tibetano',        role:'El coloso, fortaleza viviente.',         origin:'Tíbet',                         at:400 },
+const DOGERHOOD = [                  // (nombre, raza, rol y origen están en I18N: dog.<id>.*)
+  { id:'collie',  at:20  }, { id:'bimba',   at:40  }, { id:'balin',   at:60  }, { id:'coonhound', at:90  },
+  { id:'luna',    at:120 }, { id:'shyra',   at:150 }, { id:'akita',   at:180 }, { id:'azawakh',   at:210 },
+  { id:'xolo',    at:250 }, { id:'labra',   at:300 }, { id:'lettuce', at:350 }, { id:'mastiff',   at:400 },
 ];
+
+/* =====================================================================
+   IDIOMAS  (inglés por defecto · "MX" = español de México)
+   ===================================================================== */
+const I18N = {
+  en: {
+    title:'The Dog God · Tamagodchi', 'aria.canvas':'Spot, the Dog God', close:'Close',
+    feed:'Feed', play:'Play', light:'Light', clean:'Clean', med:'Medicine', info:'Dogerhood',
+    'bar.hunger':'Hunger', 'bar.happy':'Happiness', 'bar.energy':'Energy',
+    foot:'We bark for Spot. 🐾',
+    'stage.egg':'Cloud egg', 'stage.cachorro':'Cloud pup', 'stage.spot':'Spot', 'stage.dios':'Spot, the Dog God',
+    // avisos
+    't.woke':'☀️ Spot woke up', 't.tired':'💤 Spot fell asleep from exhaustion', 't.sick':'🤒 Spot got sick',
+    't.back':'Welcome back! Spot missed you 🐾', 't.hungry':'🍗 Spot is hungry', 't.wantsPlay':'🥺 Spot wants to play',
+    't.joined':'🐾 {name} joined the Dogerhood!', 't.evolved':'✨ Spot evolved: {stage}!',
+    't.tapEgg':'Tap the egg first 🥚', 't.asleep':'Spot is asleep… 💤', 't.notHungry':"Spot isn't hungry",
+    't.cantPlaySick':"Spot doesn't feel well enough to play 🤒", 't.tooTired':'Spot is too tired 💤',
+    't.won':'🎉 You won {w}/5! Spot is happy', 't.lost':'You got {w}/5. Rematch time!',
+    't.goodnight':'💤 Goodnight, Spot', 't.notSleepy':"Spot isn't sleepy", 't.shh':'Shhh… he is asleep 💤', 't.shhPet':'Shhh… sleeping 💤',
+    't.allClean':'All clean ✨', 't.notSick':"Spot isn't sick 🙂", 't.cured':'💊 Spot is cured!',
+    't.born':'🐶 Spot, the Dog God, is born!', 't.newEgg':'🥚 A new cloud egg appeared',
+    // menús y minijuego
+    'feed.title':'What do we give him?', 'feed.kibble':'🥣 Kibble', 'feed.kibbleSub':'fills the belly',
+    'feed.chicken':'🍗 Chicken', 'feed.chickenSub':'he loves it!', cancel:'Cancel',
+    'game.title':"Let's play! 🎾", 'game.prompt':'Spot is about to throw the ball. Which way do you think it goes?',
+    'game.left':'⬅️ Left', 'game.right':'Right ➡️', 'game.hits':'Hits: {n}', 'game.exit':'Quit',
+    'game.went':'The ball went {dir}… {res}', 'game.dirL':'left', 'game.dirR':'right',
+    'game.hit':'you got it! ✅', 'game.miss':'you missed! ❌',
+    // Dogerhood
+    'm.egg':'Cloud egg', 'm.age':'Age: {a}', 'm.notBorn':'Not born yet',
+    'dev.egg':'Devotion', 'dev.cachorro':'Devotion → Spot', 'dev.spot':'Devotion → Dog God', 'dev.dios':'Devotion (the whole pack)',
+    note:'Spot is eternal: he never dies. If you neglect him he gets sad or sick, but he always comes back. Devotion grows when you truly take care of him (mashing buttons does nothing).',
+    dogerhoodH:'The Dogerhood', locked:'Joins at {n} devotion',
+    'sound.on':'🔊 Sound on', 'sound.off':'🔇 Sound off', reset:'Reset',
+    'reset.confirm':'Reset everything? Spot will become an egg again and devotion is lost.',
+    // frases de Spot
+    'say.egg':['Tap the egg to hatch Spot 🥚'],
+    'say.hungry':["I'm hungry! 🍗", 'My belly goes woof…'],
+    'say.sad':['I want to play… 🥺', 'I feel lonely'],
+    'say.sleepy':["I'm sleepy… 💤"], 'say.sick':["I don't feel well… 🤒"], 'say.sleep':['Zzz… 💤'],
+    'say.happy':['Woof! 🐾', 'We bark for Spot 🐾', "I'm so happy! ✨"],
+    'say.ok':['Woof 🐾', 'Wanna play?', 'Just watching the clouds ☁️'], 'say.poop':["There's poop! 💩"],
+    // Dogerhood (según el póster)
+    'dog.collie.name':'Border Collie',  'dog.collie.breed':'Border Collie',  'dog.collie.role':'The strategist, the mind.',          'dog.collie.origin':'Scotland',
+    'dog.bimba.name':'Bimba',           'dog.bimba.breed':'Corgi',           'dog.bimba.role':'The chaos bringer.',                  'dog.bimba.origin':'Wales (proudly Latina)',
+    'dog.balin.name':'Balin',           'dog.balin.breed':'Pug',             'dog.balin.role':'The mute.',                           'dog.balin.origin':'China',
+    'dog.coonhound.name':'Coonhound',   'dog.coonhound.breed':'Coonhound',   'dog.coonhound.role':'The sniffer, scent-addict.',      'dog.coonhound.origin':'USA',
+    'dog.luna.name':'Luna',             'dog.luna.breed':'Siberian Husky',   'dog.luna.role':'The seer, second-in-command.',        'dog.luna.origin':'Siberia / Russia',
+    'dog.shyra.name':'Shyra',           'dog.shyra.breed':'Australian Cattle Dog', 'dog.shyra.role':'The tactician, relentless fighter.', 'dog.shyra.origin':'Australia',
+    'dog.akita.name':'Akita Inu',       'dog.akita.breed':'Akita Inu',       'dog.akita.role':'The samurai.',                      'dog.akita.origin':'Japan',
+    'dog.azawakh.name':'Azawakh',       'dog.azawakh.breed':'Azawakh',       'dog.azawakh.role':'Runner and desert scout.',          'dog.azawakh.origin':'West Africa',
+    'dog.xolo.name':'Xoloitzcuintle',   'dog.xolo.breed':'Xoloitzcuintle',   'dog.xolo.role':'The dark one.',                       'dog.xolo.origin':'Mexico',
+    'dog.labra.name':'Labracadabrador', 'dog.labra.breed':'Great Dane',      'dog.labra.role':'Wise leader, mage, musician.',      'dog.labra.origin':'Germany / Europe',
+    'dog.lettuce.name':'Lettuce',       'dog.lettuce.breed':'Doberman',      'dog.lettuce.role':'The unbeliever, the skeptic.',    'dog.lettuce.origin':'Germany',
+    'dog.mastiff.name':'Mastiff of the Mountain', 'dog.mastiff.breed':'Tibetan Mastiff', 'dog.mastiff.role':'The colossus, living fortress.', 'dog.mastiff.origin':'Tibet',
+  },
+  es: {
+    title:'The Dog God · Tamagodchi', 'aria.canvas':'Spot, el Dios Perro', close:'Cerrar',
+    feed:'Comer', play:'Jugar', light:'Luz', clean:'Limpiar', med:'Medicina', info:'Dogerhood',
+    'bar.hunger':'Hambre', 'bar.happy':'Alegría', 'bar.energy':'Energía',
+    foot:'We bark for Spot. 🐾',
+    'stage.egg':'Huevo de nube', 'stage.cachorro':'Cachorro de nube', 'stage.spot':'Spot', 'stage.dios':'Spot, el Dios Perro',
+    't.woke':'☀️ Spot se despertó', 't.tired':'💤 Spot se quedó dormido de cansancio', 't.sick':'🤒 Spot se enfermó',
+    't.back':'¡Volviste! Spot te extrañó 🐾', 't.hungry':'🍗 Spot tiene hambre', 't.wantsPlay':'🥺 Spot quiere jugar',
+    't.joined':'🐾 ¡{name} se unió al Dogerhood!', 't.evolved':'✨ ¡Spot evolucionó: {stage}!',
+    't.tapEgg':'Primero toca el huevo 🥚', 't.asleep':'Spot está dormido… 💤', 't.notHungry':'Spot no tiene hambre',
+    't.cantPlaySick':'Spot no se siente bien para jugar 🤒', 't.tooTired':'Spot está muy cansado 💤',
+    't.won':'🎉 ¡Ganaste {w}/5! Spot está feliz', 't.lost':'Ganaste {w}/5. ¡Hay revancha!',
+    't.goodnight':'💤 Buenas noches, Spot', 't.notSleepy':'Spot no tiene sueño', 't.shh':'Shhh… está dormido 💤', 't.shhPet':'Shhh… duerme 💤',
+    't.allClean':'Todo limpio ✨', 't.notSick':'Spot no está enfermo 🙂', 't.cured':'💊 ¡Spot se curó!',
+    't.born':'🐶 ¡Nació Spot, el Dios Perro!', 't.newEgg':'🥚 Un nuevo huevo de nube apareció',
+    'feed.title':'¿Qué le damos?', 'feed.kibble':'🥣 Croquetas', 'feed.kibbleSub':'llena la pancita',
+    'feed.chicken':'🍗 Pollo', 'feed.chickenSub':'¡lo adora!', cancel:'Cancelar',
+    'game.title':'¡A jugar! 🎾', 'game.prompt':'Spot va a lanzar la pelota. ¿Hacia dónde crees que va?',
+    'game.left':'⬅️ Izquierda', 'game.right':'Derecha ➡️', 'game.hits':'Aciertos: {n}', 'game.exit':'Salir',
+    'game.went':'La pelota fue a la {dir}… {res}', 'game.dirL':'izquierda', 'game.dirR':'derecha',
+    'game.hit':'¡acertaste! ✅', 'game.miss':'¡fallaste! ❌',
+    'm.egg':'Huevo de nube', 'm.age':'Edad: {a}', 'm.notBorn':'Aún no nace',
+    'dev.egg':'Devoción', 'dev.cachorro':'Devoción → Spot', 'dev.spot':'Devoción → Dios Perro', 'dev.dios':'Devoción (toda la manada)',
+    note:'Spot es eterno: nunca muere. Si lo descuidas se pone triste o enfermo, pero siempre vuelve. La devoción crece cuando lo cuidas de verdad (no sirve spamear botones).',
+    dogerhoodH:'El Dogerhood', locked:'Se une con {n} de devoción',
+    'sound.on':'🔊 Sonido encendido', 'sound.off':'🔇 Sonido apagado', reset:'Reiniciar',
+    'reset.confirm':'¿Reiniciar todo? Spot volverá a ser un huevo y se pierde la devoción.',
+    'say.egg':['Toca el huevo para que nazca Spot 🥚'],
+    'say.hungry':['¡Tengo hambre! 🍗', 'Mi pancita hace guau…'],
+    'say.sad':['Quiero jugar… 🥺', 'Me siento solito'],
+    'say.sleepy':['Tengo sueño… 💤'], 'say.sick':['No me siento bien… 🤒'], 'say.sleep':['Zzz… 💤'],
+    'say.happy':['¡Guau! 🐾', 'Ladren por Spot 🐾', '¡Soy feliz! ✨'],
+    'say.ok':['Guau 🐾', '¿Jugamos?', 'Aquí, vigilando las nubes ☁️'], 'say.poop':['¡Hay popó! 💩'],
+    'dog.collie.name':'Border Collie',  'dog.collie.breed':'Border Collie',  'dog.collie.role':'El estratega, la mente.',          'dog.collie.origin':'Escocia',
+    'dog.bimba.name':'Bimba',           'dog.bimba.breed':'Corgi',           'dog.bimba.role':'La que trae el caos.',              'dog.bimba.origin':'Gales (orgullosamente latina)',
+    'dog.balin.name':'Balin',           'dog.balin.breed':'Pug',             'dog.balin.role':'El mudo.',                         'dog.balin.origin':'China',
+    'dog.coonhound.name':'Coonhound',   'dog.coonhound.breed':'Coonhound',   'dog.coonhound.role':'El olfateador, adicto a los olores.', 'dog.coonhound.origin':'EUA',
+    'dog.luna.name':'Luna',             'dog.luna.breed':'Husky siberiano',  'dog.luna.role':'La vidente, segunda al mando.',     'dog.luna.origin':'Siberia / Rusia',
+    'dog.shyra.name':'Shyra',           'dog.shyra.breed':'Cattle dog australiano', 'dog.shyra.role':'La táctica, luchadora implacable.', 'dog.shyra.origin':'Australia',
+    'dog.akita.name':'Akita Inu',       'dog.akita.breed':'Akita Inu',       'dog.akita.role':'El samurái.',                      'dog.akita.origin':'Japón',
+    'dog.azawakh.name':'Azawakh',       'dog.azawakh.breed':'Azawakh',       'dog.azawakh.role':'Corredor y explorador del desierto.', 'dog.azawakh.origin':'África Occidental',
+    'dog.xolo.name':'Xoloitzcuintle',   'dog.xolo.breed':'Xoloitzcuintle',   'dog.xolo.role':'El oscuro.',                       'dog.xolo.origin':'México',
+    'dog.labra.name':'Labracadabrador', 'dog.labra.breed':'Gran Danés',      'dog.labra.role':'Líder sabio, mago y músico.',      'dog.labra.origin':'Alemania / Europa',
+    'dog.lettuce.name':'Lettuce',       'dog.lettuce.breed':'Doberman',      'dog.lettuce.role':'El incrédulo, el escéptico.',    'dog.lettuce.origin':'Alemania',
+    'dog.mastiff.name':'Mastiff de la Montaña', 'dog.mastiff.breed':'Mastín tibetano', 'dog.mastiff.role':'El coloso, fortaleza viviente.', 'dog.mastiff.origin':'Tíbet',
+  },
+};
+const LANG_KEY = 'tdg-lang';
+let LANG = (() => { try { const v = localStorage.getItem(LANG_KEY); if (v === 'es' || v === 'en') return v; } catch(e){} return 'en'; })();
+function tr(k, vars){
+  let s = I18N[LANG][k] ?? I18N.en[k] ?? k;
+  if (typeof s === 'string' && vars) for (const n in vars) s = s.split('{'+n+'}').join(vars[n]);
+  return s;
+}
 
 /* =====================================================================
    ESTADO
@@ -242,7 +357,7 @@ const now = () => Date.now();
    LÓGICA
    ===================================================================== */
 const stageOf = () => !S.hatched ? 'egg' : S.devotion < STAGE_AT.spot ? 'cachorro' : S.devotion < STAGE_AT.dios ? 'spot' : 'dios';
-const STAGE_NAME = { egg:'Huevo de nube', cachorro:'Cachorro de nube', spot:'Spot', dios:'Spot, el Dios Perro' };
+const stageName = st => tr('stage.'+st);
 
 function advance(min, away){
   if (!S.hatched || min <= 0) return;
@@ -258,10 +373,10 @@ function advance(min, away){
 
   if (sl) {
     S.energy = clamp(S.energy + RATE.energySleep*min*f);
-    if (S.energy >= 99) { S.sleeping = false; S.energy = 100; toast('☀️ Spot se despertó'); }
+    if (S.energy >= 99) { S.sleeping = false; S.energy = 100; toast(tr('t.woke')); }
   } else {
     S.energy = Math.max(away ? Math.min(S.energy, 15) : 0, S.energy + RATE.energyAwake*min*f);
-    if (S.energy <= 3 && !away) { S.sleeping = true; toast('💤 Spot se quedó dormido de cansancio'); }
+    if (S.energy <= 3 && !away) { S.sleeping = true; toast(tr('t.tired')); }
   }
 
   if (!sl) {
@@ -274,7 +389,7 @@ function advance(min, away){
 
   if (!away && !S.sick) {
     S.sickAcc += min * ((S.poops >= 2 ? 1 : 0) + (S.hunger < 8 ? 1 : 0));
-    if (S.sickAcc >= SICK_AFTER_MIN) { S.sick = true; S.sickAcc = 0; toast('🤒 Spot se enfermó'); sfx('no'); }
+    if (S.sickAcc >= SICK_AFTER_MIN) { S.sick = true; S.sickAcc = 0; toast(tr('t.sick')); sfx('no'); }
   }
   S.ageMin += min;
 }
@@ -287,12 +402,12 @@ function tick(){
   if (raw <= 0) return;
   const away = raw > 3;
   raw = Math.min(raw, 24*60);
-  if (away && S.hatched && raw > 10) toast('¡Volviste! Spot te extrañó 🐾');
+  if (away && S.hatched && raw > 10) toast(tr('t.back'));
   advance(raw * SPEED, away);
   const m = mood();
   if (m !== lastMood) {
-    if (m === 'hungry' && lastMood !== null) toast('🍗 Spot tiene hambre');
-    if (m === 'sad' && lastMood !== null) toast('🥺 Spot quiere jugar');
+    if (m === 'hungry' && lastMood !== null) toast(tr('t.hungry'));
+    if (m === 'sad' && lastMood !== null) toast(tr('t.wantsPlay'));
     lastMood = m;
   }
 }
@@ -313,28 +428,28 @@ function addDevotion(n){
   S.devotion += n;
   for (const d of DOGERHOOD) {
     if (S.devotion >= d.at && !S.unlocked.includes(d.id)) {
-      S.unlocked.push(d.id); toast(`🐾 ¡${d.name} se unió al Dogerhood!`); sfx('fanfare');
+      S.unlocked.push(d.id); toast(tr('t.joined', { name: tr('dog.'+d.id+'.name') })); sfx('fanfare');
     }
   }
   const after = stageOf();
-  if (after !== before) { startAnim('evolve', 2600); toast(`✨ ¡Spot evolucionó: ${STAGE_NAME[after]}!`); sfx('fanfare'); }
+  if (after !== before) { startAnim('evolve', 2600); toast(tr('t.evolved', { stage: stageName(after) })); sfx('fanfare'); }
 }
 
 /* ---------- acciones ---------- */
 const guard = () => {
-  if (!S.hatched) { toast('Primero toca el huevo 🥚'); return false; }
+  if (!S.hatched) { toast(tr('t.tapEgg')); return false; }
   return true;
 };
 
 function openFeed(){
   if (!guard()) return;
-  if (S.sleeping) return toast('Spot está dormido… 💤');
-  if (S.hunger >= 92) { startAnim('no', 900); sfx('no'); return toast('Spot no tiene hambre'); }
-  showPane(`<h3>¿Qué le damos?</h3>
+  if (S.sleeping) return toast(tr('t.asleep'));
+  if (S.hunger >= 92) { startAnim('no', 900); sfx('no'); return toast(tr('t.notHungry')); }
+  showPane(`<h3>${tr('feed.title')}</h3>
     <div class="row">
-      <button data-feed="croqueta">🥣 Croquetas<small>llena la pancita</small></button>
-      <button data-feed="pollo">🍗 Pollo<small>¡lo adora!</small></button>
-    </div><button class="ghost" data-close>Cancelar</button>`);
+      <button data-feed="croqueta">${tr('feed.kibble')}<small>${tr('feed.kibbleSub')}</small></button>
+      <button data-feed="pollo">${tr('feed.chicken')}<small>${tr('feed.chickenSub')}</small></button>
+    </div><button class="ghost" data-close>${tr('cancel')}</button>`);
 }
 function feed(kind){
   hidePane();
@@ -350,21 +465,21 @@ function feed(kind){
 let game = null;
 function openPlay(){
   if (!guard()) return;
-  if (S.sleeping) return toast('Spot está dormido… 💤');
-  if (S.sick) return toast('Spot no se siente bien para jugar 🤒');
-  if (S.energy < 20) return toast('Spot está muy cansado 💤');
+  if (S.sleeping) return toast(tr('t.asleep'));
+  if (S.sick) return toast(tr('t.cantPlaySick'));
+  if (S.energy < 20) return toast(tr('t.tooTired'));
   game = { round:0, wins:0, lock:false };
   renderGame();
 }
 function renderGame(msg){
-  showPane(`<h3>¡A jugar! 🎾 <small>(${Math.min(game.round+1,5)}/5)</small></h3>
-    <p>${msg || 'Spot va a lanzar la pelota. ¿Hacia dónde crees que va?'}</p>
+  showPane(`<h3>${tr('game.title')} <small>(${Math.min(game.round+1,5)}/5)</small></h3>
+    <p>${msg || tr('game.prompt')}</p>
     <div class="row">
-      <button data-g="L" ${game.lock?'disabled':''}>⬅️ Izquierda</button>
-      <button data-g="R" ${game.lock?'disabled':''}>Derecha ➡️</button>
+      <button data-g="L" ${game.lock?'disabled':''}>${tr('game.left')}</button>
+      <button data-g="R" ${game.lock?'disabled':''}>${tr('game.right')}</button>
     </div>
-    <p class="gscore">Aciertos: ${game.wins}</p>
-    <button class="ghost" data-close>Salir</button>`);
+    <p class="gscore">${tr('game.hits', { n: game.wins })}</p>
+    <button class="ghost" data-close>${tr('game.exit')}</button>`);
 }
 function pick(side){
   if (!game || game.lock) return;
@@ -372,7 +487,7 @@ function pick(side){
   const hit = dir === side;
   game.lock = true; game.round++; if (hit) game.wins++;
   sfx(hit ? 'happy' : 'tap');
-  renderGame(`La pelota fue a la ${dir==='L'?'izquierda':'derecha'}… ${hit?'¡acertaste! ✅':'¡fallaste! ❌'}`);
+  renderGame(tr('game.went', { dir: tr(dir==='L' ? 'game.dirL' : 'game.dirR'), res: tr(hit ? 'game.hit' : 'game.miss') }));
   setTimeout(() => {
     if (!game) return;
     if (game.round >= 5) return finishGame();
@@ -383,42 +498,42 @@ function finishGame(){
   const w = game.wins; game = null; hidePane();
   startAnim('play', 2600);
   S.energy = clamp(S.energy - 15); S.hunger = clamp(S.hunger - 8);
-  if (w >= 3) { S.happy = clamp(S.happy + 30); addDevotion(5); toast(`🎉 ¡Ganaste ${w}/5! Spot está feliz`); sfx('fanfare'); }
-  else        { S.happy = clamp(S.happy + 10); addDevotion(1); toast(`Ganaste ${w}/5. ¡Hay revancha!`); }
+  if (w >= 3) { S.happy = clamp(S.happy + 30); addDevotion(5); toast(tr('t.won', { w })); sfx('fanfare'); }
+  else        { S.happy = clamp(S.happy + 10); addDevotion(1); toast(tr('t.lost', { w })); }
   save();
 }
 
 function toggleLight(){
   if (!guard()) return;
-  if (S.sleeping) { S.sleeping = false; toast('☀️ Spot se despertó'); if (S.energy < 40) S.happy = clamp(S.happy - 5); }
-  else if (S.energy >= 85) { startAnim('no', 900); return toast('Spot no tiene sueño'); }
-  else { S.sleeping = true; toast('💤 Buenas noches, Spot'); }
+  if (S.sleeping) { S.sleeping = false; toast(tr('t.woke')); if (S.energy < 40) S.happy = clamp(S.happy - 5); }
+  else if (S.energy >= 85) { startAnim('no', 900); return toast(tr('t.notSleepy')); }
+  else { S.sleeping = true; toast(tr('t.goodnight')); }
   hidePane(); save();
 }
 function clean(){
   if (!guard()) return;
-  if (S.sleeping) return toast('Shhh… está dormido 💤');
-  if (!S.poops) return toast('Todo limpio ✨');
+  if (S.sleeping) return toast(tr('t.shh'));
+  if (!S.poops) return toast(tr('t.allClean'));
   S.poops = 0; S.sickAcc = Math.max(0, S.sickAcc - 40); S.happy = clamp(S.happy + 5);
   startAnim('clean', 1800); sfx('happy'); addDevotion(2); save();
 }
 function medicine(){
   if (!guard()) return;
-  if (S.sleeping) return toast('Shhh… está dormido 💤');
-  if (!S.sick) return toast('Spot no está enfermo 🙂');
+  if (S.sleeping) return toast(tr('t.shh'));
+  if (!S.sick) return toast(tr('t.notSick'));
   S.sick = false; S.sickAcc = 0; S.happy = clamp(S.happy - 5);
-  startAnim('med', 2000); sfx('happy'); addDevotion(5); toast('💊 ¡Spot se curó!'); save();
+  startAnim('med', 2000); sfx('happy'); addDevotion(5); toast(tr('t.cured')); save();
 }
 function petSpot(){
   if (!S.hatched) {
     S.hatchTaps++; startAnim('wobble', 500); sfx('tap');
     if (S.hatchTaps >= 6) {
       S.hatched = true; S.last = now(); S.ageMin = 0;
-      startAnim('hatch', 2200); toast('🐶 ¡Nació Spot, el Dios Perro!'); sfx('fanfare');
+      startAnim('hatch', 2200); toast(tr('t.born')); sfx('fanfare');
     }
     return save();
   }
-  if (S.sleeping) return toast('Shhh… duerme 💤');
+  if (S.sleeping) return toast(tr('t.shhPet'));
   startAnim('pet', 1500); spawnHearts(3); sfx('bark');
   S.happy = clamp(S.happy + 2);
   if (S.happy < 95 && S.ageMin - S.lastPetDevo > 5) { S.lastPetDevo = S.ageMin; addDevotion(1); }
@@ -452,33 +567,51 @@ function nextToast(){
 const modal = $('#modal');
 function openInfo(){
   const st = stageOf();
-  $('#mName').textContent = S.hatched ? 'Spot' : 'Huevo de nube';
+  $('#mName').textContent = S.hatched ? 'Spot' : tr('m.egg');
   const a = Math.floor(S.ageMin), d = Math.floor(a/1440), h = Math.floor((a%1440)/60), mi = a%60;
-  const age = !S.hatched ? 'Aún no nace' : d ? `${d} d ${h} h` : h ? `${h} h ${mi} min` : `${mi} min`;
-  $('#mSub').textContent = `${STAGE_NAME[st]} · Edad: ${age}`;
+  const age = !S.hatched ? tr('m.notBorn') : d ? `${d} d ${h} h` : h ? `${h} h ${mi} min` : `${mi} min`;
+  $('#mSub').textContent = `${stageName(st)} · ${tr('m.age', { a: age })}`;
   const next = st === 'cachorro' ? STAGE_AT.spot : st === 'spot' ? STAGE_AT.dios : DOGERHOOD[DOGERHOOD.length-1].at;
   const prev = st === 'cachorro' ? 0 : st === 'spot' ? STAGE_AT.spot : STAGE_AT.dios;
-  const label = st === 'cachorro' ? 'Devoción → Spot' : st === 'spot' ? 'Devoción → Dios Perro' : st === 'dios' ? 'Devoción (toda la manada)' : 'Devoción';
-  $('#dLabel').textContent = label;
+  $('#dLabel').textContent = tr('dev.' + st);
   $('#dNum').textContent = `${Math.floor(S.devotion)} / ${next}`;
   $('#dFill').style.width = clamp(((S.devotion - prev) / (next - prev)) * 100) + '%';
   $('#mGrid').innerHTML = DOGERHOOD.map(d => {
     const ok = S.unlocked.includes(d.id);
     return ok
-      ? `<div class="card"><b>${d.name}</b><em>${d.breed}</em>${d.role}<em>${d.origin}</em></div>`
-      : `<div class="card locked"><b>???</b><em>Se une con ${d.at} de devoción</em></div>`;
+      ? `<div class="card"><b>${tr('dog.'+d.id+'.name')}</b><em>${tr('dog.'+d.id+'.breed')}</em>${tr('dog.'+d.id+'.role')}<em>${tr('dog.'+d.id+'.origin')}</em></div>`
+      : `<div class="card locked"><b>???</b><em>${tr('locked', { n: d.at })}</em></div>`;
   }).join('');
-  $('#mSound').textContent = S.mute ? '🔇 Sonido apagado' : '🔊 Sonido encendido';
+  $('#mSound').textContent = tr(S.mute ? 'sound.off' : 'sound.on');
   modal.hidden = false;
 }
 $('#mClose').onclick = () => modal.hidden = true;
 modal.addEventListener('click', e => { if (e.target === modal) modal.hidden = true; });
-$('#mSound').onclick = () => { S.mute = !S.mute; save(); $('#mSound').textContent = S.mute ? '🔇 Sonido apagado' : '🔊 Sonido encendido'; };
+$('#mSound').onclick = () => { S.mute = !S.mute; save(); $('#mSound').textContent = tr(S.mute ? 'sound.off' : 'sound.on'); };
 $('#mReset').onclick = () => {
-  if (!confirm('¿Reiniciar todo? Spot volverá a ser un huevo y se pierde la devoción.')) return;
+  if (!confirm(tr('reset.confirm'))) return;
   S = Object.assign({}, DEFAULT, { unlocked:[], last:now(), mute:S.mute }); save(); modal.hidden = true; hidePane();
-  toast('🥚 Un nuevo huevo de nube apareció');
+  toast(tr('t.newEgg'));
 };
+
+/* ---------- idioma ---------- */
+function applyLang(){
+  document.documentElement.lang = LANG === 'es' ? 'es-MX' : 'en';
+  document.title = tr('title');
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = tr(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-aria]').forEach(el => el.setAttribute('aria-label', tr(el.dataset.i18nAria)));
+  document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = tr(el.dataset.i18nTitle); });
+  document.querySelectorAll('[data-lang]').forEach(b => {
+    const on = b.dataset.lang === LANG; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
+  });
+}
+function setLang(l){
+  if (l === LANG) return;
+  LANG = l; try { localStorage.setItem(LANG_KEY, l); } catch(e){}
+  applyLang(); hidePane(); hudAt = 0;
+  if (!modal.hidden) openInfo();
+}
+document.querySelectorAll('[data-lang]').forEach(b => { b.onclick = () => setLang(b.dataset.lang); });
 
 $('#bFeed').onclick = openFeed;
 $('#bPlay').onclick = openPlay;
@@ -842,23 +975,13 @@ function render(){
 }
 
 /* ---------- HUD ---------- */
-const SAY = {
-  egg:['Toca el huevo para que nazca Spot 🥚'],
-  hungry:['¡Tengo hambre! 🍗','Mi pancita hace guau…'],
-  sad:['Quiero jugar… 🥺','Me siento solito'],
-  sleepy:['Tengo sueño… 💤'],
-  sick:['No me siento bien… 🤒'],
-  sleep:['Zzz… 💤'],
-  happy:['¡Guau! 🐾','Ladren por Spot 🐾','¡Soy feliz! ✨'],
-  ok:['Guau 🐾','¿Jugamos?','Aquí, vigilando las nubes ☁️'],
-};
 let hudAt = 0;
 function updateHud(){
   const t = now(); if (t - hudAt < 250) return; hudAt = t;
   const m = mood();
   let line;
-  if (m==='ok' || m==='happy') line = S.poops ? '¡Hay popó! 💩' : null;
-  if (!line) { const arr = SAY[m] || SAY.ok; line = arr[Math.floor(t/7000) % arr.length]; }
+  if (m==='ok' || m==='happy') line = S.poops ? tr('say.poop')[0] : null;
+  if (!line) { const arr = I18N[LANG]['say.'+m] || I18N[LANG]['say.ok']; line = arr[Math.floor(t/7000) % arr.length]; }
   const sayEl = $('#say'); if (sayEl.textContent !== line) sayEl.textContent = line;
   for (const k of ['hunger','happy','energy']) {
     const el = document.querySelector(`.bar[data-k=${k}]`);
@@ -874,6 +997,7 @@ function updateHud(){
 }
 
 /* ---------- arranque ---------- */
+applyLang();
 tick(); lastMood = mood();
 setInterval(() => { tick(); }, 1000);
 setInterval(save, 5000);
