@@ -860,7 +860,6 @@ function drawDog(p,pal,st,fr,t){
 
   // ---- extras de la forma divina
   if (st==='dios'){
-    for (let a=0;a<44;a++){ const r=a/44*Math.PI*2; const hx=X(32+9*Math.cos(r)), hy=Yh(5+2.2*Math.sin(r)); put(hx,hy,Math.sin(r)<0?C.goldHi:C.gold); }
     flame(6,55,17,fr,0); flame(58,55,17,fr,2);
     sparkle(18,14+((fr>>1)%2),false); sparkle(47,10+((fr>>1)%2),true); sparkle(6,32,false); sparkle(58,30,false);
   }
