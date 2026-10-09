@@ -625,7 +625,7 @@ function renderGame(){
 function finishGame(){
   const g = game, w = g.wins, K = g.kind === 'kush', p = pet();
   hidePane();
-  startAnim(K ? 'kushwin' : 'play', 2600);
+  startAnim(K ? 'kushwin' : 'play', 2600, { xd: !K && w >= 3 });          // Spot solo se muere de risa si ganó
   p.energy = clamp(p.energy - (K ? 10 : 15)); p.hunger = clamp(p.hunger - 8);
   if (w >= 3) { p.happy = clamp(p.happy + 30); gain(5); toast(tr('t.won', { w, name: petName() })); sfx('fanfare'); }
   else        { p.happy = clamp(p.happy + 10); gain(1); toast(tr('t.lost', { w })); }
@@ -727,6 +727,7 @@ function medicine(){
   p.sick = false; p.sickAcc = 0; p.happy = clamp(p.happy - 5);
   startAnim('med', 2000); sfx('happy'); gain(5); toast(trp('t.cured')); save();
 }
+let xdCool = 0;
 function petSpot(){
   if (game) return gameTap();
   if (isKush()) return petKush();
@@ -739,7 +740,9 @@ function petSpot(){
     return save();
   }
   if (S.sleeping) return toast(tr('t.shhPet'));
-  startAnim('pet', 1500); spawnHearts(3); sfx('bark');
+  const lol = S.happy >= 65 && now() > xdCool;                   // la risa XD no es automática: solo si está de buenas y máx. cada 30 s
+  if (lol) xdCool = now() + 30000;
+  startAnim('pet', 1500, { xd: lol }); spawnHearts(3); sfx('bark');
   S.happy = clamp(S.happy + 2);
   if (S.happy < 95 && S.ageMin - S.lastPetDevo > 5) { S.lastPetDevo = S.ageMin; addDevotion(1); }
   save();
@@ -1081,8 +1084,17 @@ function drawDog(p,pal,st,fr,t){
   flameEdge(pal,t,fa);                                                        // el pelo de las orillas ondea
   glow(pal,fr);
   if (p.spot) {                                                               // LA MANCHA: de ahí le viene el nombre; se mueve según cómo se siente
-    const q = p.spot; ONLY = FUR;                                             // (solo se pinta sobre el pelo)
-    E(q.x,q.y,q.rx,q.ry,C.ink); E(q.x-q.rx*.7,q.y+q.ry*.45,q.rx*.55,q.ry*.6,C.ink); E(q.x+q.rx*.65,q.y-q.ry*.4,q.rx*.5,q.ry*.55,C.ink);
+    const q = p.spot, b = q.brow; ONLY = FUR;                                 // (solo se pinta sobre el pelo)
+    if (b < .04) {                                                            // una sola mancha
+      E(q.x,q.y,q.rx,q.ry,C.ink); E(q.x-q.rx*.7,q.y+q.ry*.45,q.rx*.55,q.ry*.6,C.ink); E(q.x+q.rx*.65,q.y-q.ry*.4,q.rx*.5,q.ry*.55,C.ink);
+    } else {                                                                  // se parte en dos y sube a la frente: cejas de enojo
+      const lerp = (a2,b2) => a2 + (b2 - a2) * b;
+      for (const sg of [-1, 1]) {
+        const cx = lerp(q.x + sg*q.rx*.6, 32 + sg*6.2), cy = lerp(q.y, 24.9);
+        const d = lerp(q.rx*.8, 3.7), slope = .47 * b * -sg, th = lerp(q.ry*2, 2.2);       // izq. baja hacia la nariz, der. igual (espejo)
+        thickLine(X(cx-d), Yh(cy-slope*d), X(cx+d), Yh(cy+slope*d), C.ink, Math.max(1.6, th*s));
+      }
+    }
     ONLY = null;
   }
   // ---- un solo sombreado suave abajo
@@ -1118,7 +1130,6 @@ function drawDog(p,pal,st,fr,t){
     else if (m==='xd'){                                    // carcajada: bocota en forma de "D" (arriba plana con dientes, abajo redonda) y lengua
       for (let j=0;j<=6;j++){ const hw = Math.round(6.4*Math.sqrt(1-(j/7.4)*(j/7.4))); R(32.5-hw, 36+j, hw*2+1, 1, j===0 ? C.white : C.mouth, 1); }
       E(33,41.2,3.6,1.7,C.tongue,1);
-      R(25,36,1,1,C.ink,1); R(40,36,1,1,C.ink,1); R(25,37,1,1,C.ink,1); R(40,37,1,1,C.ink,1);   // arruguitas de las mejillas
     }
   };
   mouth(p.mouth);
@@ -1206,9 +1217,11 @@ function pose(fr,t){
     case 'sick':   p.eyes='x'; p.mouth='frown'; p.earDrop=3; p.shake=(fr%2)?1:0; p.flare*=.45; break;
     case 'sleep':  p.eyes='closed'; p.mouth='sleep'; p.earDrop=1; p.headBob=(fr%8<4)?0:1; p.flare*=.4; break;
   }
-  // ¡Spot es el dios del XD! Cada tanto se desternilla: ojos >< y bocota (feliz: ~la mitad del tiempo; normal: de vez en cuando)
-  const xdBurst = (m==='happy' && (t % 8) < 4.2) || (m==='ok' && (t % 12) < 2.6);
-  if (xdBurst) { p.eyes='xd'; p.mouth='xd'; p.blush=true; p.shake=(fr%2)?1:-1; p.flare*=1.3; p.tail=wag(2); p.earDrop=0; }
+  // ¡Spot es el dios del XD!, pero solo se desternilla cuando se lo MERECE (si no, cansa): al atrapar la pelota, al ganar,
+  // con la pizza al vuelo y el congelamiento del helado, al evolucionar/nacer, con una caricia (máx. cada 30 s) y,
+  // rarísimo, un chiste propio cada ~3 minutos si está feliz.
+  const joke = m === 'happy' && ((t + 60) % 180) < 2.2;
+  if (joke) { p.eyes='xd'; p.mouth='xd'; p.blush=true; p.shake=(fr%2)?1:-1; p.flare*=1.3; p.tail=wag(2); p.earDrop=0; }
   if (p.eyes==='open' && fr%26===0) p.eyes='closed';
 
   const g = (game && game.kind === 'spot') ? game : null;
@@ -1219,14 +1232,19 @@ function pose(fr,t){
       if (g.tapAt != null) { const jt = (now() - g.t0) - g.tapAt; if (jt >= 0 && jt < JUMP_MS) p.jump = Math.sin(Math.PI * jt / JUMP_MS) * 7; }
     } else if (g.phase === 'result') {
       if (g.result === 'catch') { p.eyes = 'xd'; p.mouth = 'xd'; p.shake = (fr%2) ? 1 : -1; p.blush = true; }
-      else { p.eyes = 'sad'; p.mouth = 'frown'; p.earDrop = 2; }
+      else { p.eyes = 'happy'; p.mouth = 'open'; p.tongue = true; p.blush = true; }          // si falla no hace berrinche: se ríe de sí mismo
     } else { p.eyes = 'open'; p.mouth = 'smile'; }
   }
   if (a) {
     const e = now() - a.t0;
     switch (a.type) {
-      case 'pet':   p.eyes='xd'; p.mouth='xd'; p.blush=true; p.shake=(fr%2)?1:-1; p.tail=wag(2); p.earDrop=0; p.flare=Math.max(p.flare,1.6); break;
-      case 'play':  p.eyes='xd'; p.mouth='xd'; p.blush=true; p.tail=wag(2); p.earDrop=0; p.jump=Math.abs(Math.sin(e/110))*5; p.flare=Math.max(p.flare,1.6); break;
+      case 'pet':   p.tail=wag(2); p.earDrop=0; p.blush=true; p.flare=Math.max(p.flare,1.6);                     // caricia: contento…
+                    if (a.xd) { p.eyes='xd'; p.mouth='xd'; p.shake=(fr%2)?1:-1; }                               // …y a veces le da la risa
+                    else { p.eyes='happy'; p.mouth='open'; p.tongue=true; }
+                    break;
+      case 'play':  p.tail=wag(2); p.earDrop=0; p.blush=true; p.jump=Math.abs(Math.sin(e/110))*5; p.flare=Math.max(p.flare,1.6);
+                    if (a.xd) { p.eyes='xd'; p.mouth='xd'; } else { p.eyes='happy'; p.mouth='open'; p.tongue=true; }   // XD solo si ganó
+                    break;
       case 'eat':   { const q = eatPose(a,e,fr); Object.assign(p, q); p.earDrop=0; p.tail=wag(2); p.blush = q.eyes!=='open'; if (q.eyes==='xd') p.flare*=1.3; break; }
       case 'clean': p.eyes='happy'; p.mouth='smile'; p.blush=true; p.earDrop=0; p.tail=wag(2); break;
       case 'med':   p.eyes='closed'; p.mouth='smile'; p.earDrop=0; break;
@@ -1236,24 +1254,37 @@ function pose(fr,t){
       case 'wobble':p.wobble=(fr%2)?1:-1; break;
     }
   }
-  // La mancha negra de Spot (de ahí su nombre) se mueve según lo que siente
-  let sp;
-  if (p.eyes === 'xd') sp = { x:35+Math.sin(t*14)*3, y:49.2+Math.sin(t*18)*1.2, rx:4.2, ry:2.7 };            // de risa: se sacude y se infla
-  else if (g && g.phase === 'fly') sp = { x:34+Math.sin(t*8)*3, y:45, rx:3.6, ry:2.8 };                         // emocionado con la pelota
-  else if (a && a.type === 'eat') sp = { x:35, y:47.5, rx:3.2+((fr%2)?.9:0), ry:2.6+((fr%2)?.5:0) };            // late con cada bocado
+  // ---- La mancha negra de Spot (de ahí su nombre): chiquita, viaja por todo el cuerpo (panza, cola, cabeza) según lo que
+  // siente y, cuando amerita, se DIVIDE en dos y se vuelve cejas de enojo.
+  const zone = { belly:[37,46], tail:[50+p.tail,45], head:[32,21.5], low:[35,50.5] };
+  let tg = { x:37, y:46, rx:2.1, ry:1.6, brow:0, jx:0, jy:0 };
+  const Lm = I18N[LANG], lineIdx = Math.floor(now() / 7000);
+  const mission = !game && !a && !S.poops && (m === 'ok' || m === 'happy')                // declara su misión: ¡voy a encontrar a My Happy Thing!
+    && (m === 'ok' ? [0,1] : [0]).includes(lineIdx % (Lm['say.'+m] || [1]).length) && (now() % 7000) < 2600;
+  const grimace = !!(a && a.type === 'med');                                              // la medicina sabe feo (Spot nunca hace berrinche por hambre)
+  const gameFace = !!(g && g.phase === 'fly');                                            // concentración total con la pelota
+  if (p.eyes === 'xd')              tg = { x:35, y:49, rx:2.6, ry:1.8, brow:0, jx:Math.sin(t*14)*2.2, jy:Math.sin(t*18) };      // de risa: se sacude
+  else if (a && a.type === 'eat')   tg = { x:35, y:48, rx:2.1+((fr%2)?.6:0), ry:1.6+((fr%2)?.4:0), brow:0, jx:0, jy:0 };       // late con cada bocado
+  else if (a && a.type === 'pet')   tg = { x:zone.head[0]+Math.sin(t*9), y:zone.head[1], rx:1.9, ry:1.5, brow:0, jx:0, jy:0 };    // sube a la cabeza, donde lo acarician
   else switch (m) {
-    case 'happy':  sp = { x:34+Math.sin(t*2.4)*4.5, y:46+Math.sin(t*4.8)*1.6, rx:3.6+Math.sin(t*6)*.5, ry:2.8 }; break;   // pasea feliz por la panza
-    case 'hungry': sp = { x:35, y:50, rx:2.1, ry:1.4 }; break;                                                         // se encoge y se hunde
-    case 'sad':    sp = { x:33, y:51, rx:2.4, ry:1.3 }; break;
-    case 'sleepy': sp = { x:37, y:48, rx:2.8, ry:2 }; break;
-    case 'sleep':  sp = { x:37, y:47.5, rx:3+Math.sin(t*1.8)*.4, ry:2.2+Math.sin(t*1.8)*.3 }; break;                // respira con él
-    case 'sick':   sp = { x:36+Math.sin(t*9)*1.6, y:47+Math.cos(t*7)*1.2, rx:2+Math.sin(t*11)*.7, ry:1.6 }; break;  // se marea
-    default:       sp = { x:37+Math.sin(t*1.3)*1.2, y:46+Math.sin(t*2)*.5, rx:3.2, ry:2.6 };                         // tranquilo: se mece
+    case 'happy':  tg = { x:zone.tail[0], y:zone.tail[1], rx:1.7, ry:1.7, brow:0, jx:0, jy:Math.sin(t*6) * .6 }; break;          // se sube a la colita que mueve
+    case 'hungry': tg = { x:zone.low[0], y:zone.low[1], rx:1.4, ry:1, brow:0, jx:0, jy:0 }; break;                              // se encoge y se hunde
+    case 'sad':    tg = { x:33, y:51, rx:1.5, ry:.9, brow:0, jx:0, jy:0 }; break;
+    case 'sleepy': tg = { x:38, y:49, rx:1.9, ry:1.4, brow:0, jx:0, jy:0 }; break;
+    case 'sleep':  tg = { x:42, y:49.5, rx:2+Math.sin(t*1.8)*.3, ry:1.5+Math.sin(t*1.8)*.2, brow:0, jx:0, jy:0 }; break;         // hecha bolita en la base de la cola, respira con él
+    case 'sick':   tg = { x:36, y:47, rx:1.5+Math.sin(t*11)*.4, ry:1.2, brow:0, jx:Math.sin(t*9)*1.5, jy:Math.cos(t*7)*1.1 }; break;   // se marea
+    default: {                                                                                          // tranquilo: pasea (panza → cola → panza → cabeza)
+      const tour = [zone.belly, zone.tail, zone.belly, zone.head][Math.floor(t / 9) % 4];
+      tg = { x:tour[0]+Math.sin(t*1.3)*.8, y:tour[1]+Math.sin(t*2)*.4, rx:2.1, ry:1.6, brow:0, jx:0, jy:0 };
+    }
   }
-  p.spot = sp;
+  tg.brow = (mission || grimace || gameFace) ? 1 : 0;
+  for (const k of ['x','y','rx','ry','brow']) SPOT[k] += (tg[k] - SPOT[k]) * .22;         // se desliza con suavidad de un lugar a otro
+  p.spot = { x:SPOT.x + tg.jx, y:SPOT.y + tg.jy, rx:SPOT.rx, ry:SPOT.ry, brow:SPOT.brow };
   if (p.eyes === 'xd') p.jump = Math.max(p.jump || 0, (fr%2) ? 1 : 0);                                          // la risa lo hace rebotar
   return p;
 }
+const SPOT = { x:37, y:46, rx:2.1, ry:1.6, brow:0 };         // estado suavizado de la mancha
 
 /* ---------- comida: cada una con su propia animación ---------- */
 const F = {
@@ -1724,7 +1755,7 @@ window.addEventListener('pagehide', save);
 render();
 
 window.__tdg = { get S(){ return S; }, advance, tick, render, save, addDevotion, startAnim, mood, stageOf, setChar, startKushIntro, get kushIntro(){ return kushIntro; }, kushAsleep, isNight,
-                 pet, get game(){ return game; }, FOODS, feed, gameTap, pounce, setMode };
+                 pet, get game(){ return game; }, get anim(){ return A; }, FOODS, feed, gameTap, pounce, setMode };
 })();
 </script>
 </body>
