@@ -276,7 +276,7 @@ const I18N = {
     title:'The Dog God · Tamagodchi', 'aria.canvas':'Spot, the Dog God', close:'Close',
     feed:'Feed', play:'Play', light:'Light', clean:'Clean', med:'Medicine', info:'Dogerhood',
     'bar.hunger':'Hunger', 'bar.happy':'Happiness', 'bar.energy':'Energy',
-    foot:'Made by JuanFer · All rights reserved',
+    foot:'Made by JuanFer',
     'stage.egg':'Cloud egg', 'stage.cachorro':'Cloud pup', 'stage.spot':'Spot', 'stage.dios':'Spot, the Dog God',
     // avisos
     't.woke':'☀️ Spot woke up', 't.tired':'💤 Spot fell asleep from exhaustion', 't.sick':'🤒 {name} got sick',
@@ -289,8 +289,7 @@ const I18N = {
     't.allClean':'All clean ✨', 't.notSick':"{name} isn't sick 🙂", 't.cured':'💊 {name} is cured!',
     't.born':'🐶 Spot, the Dog God, is born!', 't.newEgg':'🥚 A new cloud egg appeared',
     't.kushSleeping':'Kush is sleeping. Let her be. 💤',
-    't.kushDark':'🌙 Lights off. Kush wakes up.', 't.kushLight':'☀️ Lights on. Kush goes back to sleep.',
-    't.kushAlreadyNight':"It's already night. Kush is awake. 🌙",
+    't.stuffed':'😵 {name} is stuffed…', 't.overSick':'🤢 {name} ate way too much and got sick', 't.poopNow':'💩 Oops… {name} had to go',
     // comida
     'feed.title':'What shall we feed?', cancel:'Cancel',
     'food.kibble':'Kibble',   'food.kibble.sub':'filling',
@@ -299,6 +298,10 @@ const I18N = {
     'food.sausage':'Sausage', 'food.sausage.sub':'slurp!',
     'food.icecream':'Ice cream', 'food.icecream.sub':'brain freeze',
     'food.pizza':'Pizza',     'food.pizza.sub':'catch it!',
+    'food.tuna':'Tuna',       'food.tuna.sub':'fishy!',
+    'food.ham':'Ham',         'food.ham.sub':'tasty',
+    'food.shrimp':'Shrimp',   'food.shrimp.sub':'pounce!',
+    'food.milk':'Milk',       'food.milk.sub':'lap lap',
     // minijuegos
     'game.exit':'Quit', 'game.chip':'🎾 {r}/5 · ✔ {n}',
     'game.prompt':'Tap anywhere to jump and catch the ball!', 'game.catch':'Nice catch! 🎉', 'game.missed':'Missed it! 🥲',
@@ -342,7 +345,7 @@ const I18N = {
     title:'The Dog God · Tamagodchi', 'aria.canvas':'Spot, el Dios Perro', close:'Cerrar',
     feed:'Comer', play:'Jugar', light:'Luz', clean:'Limpiar', med:'Medicina', info:'Dogerhood',
     'bar.hunger':'Hambre', 'bar.happy':'Alegría', 'bar.energy':'Energía',
-    foot:'Hecho por JuanFer · Todos los derechos reservados',
+    foot:'Hecho por JuanFer',
     'stage.egg':'Huevo de nube', 'stage.cachorro':'Cachorro de nube', 'stage.spot':'Spot', 'stage.dios':'Spot, el Dios Perro',
     't.woke':'☀️ Spot se despertó', 't.tired':'💤 Spot se quedó dormido de cansancio', 't.sick':'🤒 {name} se enfermó',
     't.back':'¡Volviste! {name} te extrañó 🐾', 't.hungry':'🍗 {name} tiene hambre', 't.wantsPlay':'🥺 {name} quiere jugar',
@@ -356,8 +359,7 @@ const I18N = {
     't.allClean':'Todo limpio ✨', 't.notSick':'{name} no está enfermo 🙂', 'k.t.notSick':'{name} no está enferma 🙂', 't.cured':'💊 ¡{name} se curó!',
     't.born':'🐶 ¡Nació Spot, el Dios Perro!', 't.newEgg':'🥚 Un nuevo huevo de nube apareció',
     't.kushSleeping':'Kush está dormida. Déjala. 💤',
-    't.kushDark':'🌙 Luz apagada. Kush despierta.', 't.kushLight':'☀️ Luz encendida. Kush vuelve a dormir.',
-    't.kushAlreadyNight':'Ya es de noche. Kush está despierta. 🌙',
+    't.stuffed':'😵 {name} está empachado…', 't.overSick':'🤢 {name} comió demasiado y se enfermó', 't.poopNow':'💩 Uy… {name} tuvo que ir',
     'feed.title':'¿Qué le damos?', cancel:'Cancelar',
     'food.kibble':'Croquetas', 'food.kibble.sub':'llenan',
     'food.chicken':'Pollo',    'food.chicken.sub':'¡rico!',
@@ -365,6 +367,10 @@ const I18N = {
     'food.sausage':'Salchicha','food.sausage.sub':'¡slurp!',
     'food.icecream':'Helado',  'food.icecream.sub':'congelante',
     'food.pizza':'Pizza',      'food.pizza.sub':'¡atrápala!',
+    'food.tuna':'Atún',        'food.tuna.sub':'¡pescado!',
+    'food.ham':'Jamón',        'food.ham.sub':'sabroso',
+    'food.shrimp':'Camarón',   'food.shrimp.sub':'¡zarpazo!',
+    'food.milk':'Leche',       'food.milk.sub':'a lamer',
     'game.exit':'Salir', 'game.chip':'🎾 {r}/5 · ✔ {n}',
     'game.prompt':'¡Toca donde sea para saltar y atrapar la pelota!', 'game.catch':'¡Buena atrapada! 🎉', 'game.missed':'¡Se te escapó! 🥲',
     'kgame.chip':'🐭 {r}/5 · ✔ {n}', 'kgame.prompt':'Puedes oír o ver… nunca las dos. ¡Encuentra al ratón!',
@@ -414,12 +420,13 @@ function tr(k, vars){
 const DEFAULT = {
   hatched:false, hatchTaps:0,
   hunger:70, happy:70, energy:80,
-  poops:0, poopAcc:0, sick:false, sickAcc:0, sleeping:false,
+  poops:0, poopAcc:0, sick:false, sickAcc:0, sleeping:false, over:0,      // over = lo que se pasó de lleno (Spot come sin límite… con consecuencias)
   devotion:0, unlocked:[], ageMin:0,
   lastPetDevo:0, mute:false, last:Date.now(),
   char:'spot',                 // personaje en pantalla: 'spot' | 'kush'
 };
-function newKush(){ return { hunger:70, happy:70, energy:80, poops:0, poopAcc:0, sick:false, sickAcc:0 }; }   // los cuidados de Kush
+// los cuidados de Kush; nap = se durmió sola de cansancio; wokenUntil = hasta cuándo está despierta aunque sea de día
+function newKush(){ return { hunger:70, happy:70, energy:80, poops:0, poopAcc:0, sick:false, sickAcc:0, over:0, nap:false, wokenUntil:0 }; }
 let S = load();
 
 function load(){
@@ -462,6 +469,7 @@ function advancePet(p, name, min, away, sl){
   const fl = v => away ? Math.min(v, OFFLINE_FLOOR) : 0;   // piso mientras no estabas
   p.hunger = Math.max(fl(p.hunger), p.hunger - hLoss*min*f);
   p.happy  = Math.max(fl(p.happy),  p.happy  - pLoss*min*f);
+  p.over = Math.max(0, (p.over || 0) - 1.5*min*f);          // el empacho se le va pasando
 
   if (sl) p.energy = clamp(p.energy + RATE.energySleep*min*f);
   else    p.energy = Math.max(away ? Math.min(p.energy, 15) : 0, p.energy + RATE.energyAwake*min*f);
@@ -488,6 +496,10 @@ function advance(min, away){
     S.ageMin += min;
   }
   advancePet(S.k, 'Kush', min, away, kushAsleep());      // Kush duerme de día (según el reloj)
+  // Kush se duerme SOLA cuando le queda poca energía, y no despierta hasta que su barra se llena (sin avisarle a nadie)
+  const k = S.k;
+  if (!k.nap && !kushAsleep() && k.energy <= KUSH_TIRED && !away) { k.nap = true; k.wokenUntil = 0; }
+  else if (k.nap && k.energy >= 99) k.nap = false;
 }
 
 let lastMood = null, lastMoodChar = null;
@@ -540,33 +552,48 @@ const guard = () => {
 };
 
 /* 6 comidas, cada una con SU animación (ver drawFood). h = hambre, hp = alegría, poop = qué tan pronto sigue el popó */
-const FOODS = [
-  { id:'kibble',   icon:'🥣', h:25, hp:2,  poop:25, ms:2500 },
-  { id:'chicken',  icon:'🍗', h:40, hp:10, poop:45, ms:3300 },
-  { id:'bone',     icon:'🦴', h:12, hp:18, poop:10, ms:3500 },
-  { id:'sausage',  icon:'🌭', h:30, hp:8,  poop:30, ms:3100 },
-  { id:'icecream', icon:'🍦', h:8,  hp:28, poop:15, ms:3700, energy:8 },
-  { id:'pizza',    icon:'🍕', h:45, hp:12, poop:50, ms:3100 },
+const FOODS = [                        // for = quién la come (los gatos no comen helado, hueso, salchicha ni pizza)
+  { id:'kibble',   icon:'🥣', h:25, hp:2,  poop:25, ms:2500, for:['spot','kush'] },
+  { id:'chicken',  icon:'🍗', h:40, hp:10, poop:45, ms:3300, for:['spot','kush'] },
+  { id:'bone',     icon:'🦴', h:12, hp:18, poop:10, ms:3500, for:['spot'] },
+  { id:'sausage',  icon:'🌭', h:30, hp:8,  poop:30, ms:3100, for:['spot'] },
+  { id:'icecream', icon:'🍦', h:8,  hp:28, poop:15, ms:3700, for:['spot'], energy:8 },
+  { id:'pizza',    icon:'🍕', h:45, hp:12, poop:50, ms:3100, for:['spot'] },
+  { id:'tuna',     icon:'🐟', h:35, hp:15, poop:30, ms:3400, for:['kush'] },
+  { id:'ham',      icon:'🍖', h:30, hp:10, poop:25, ms:3100, for:['kush'] },
+  { id:'shrimp',   icon:'🦐', h:20, hp:20, poop:15, ms:2900, for:['kush'] },
+  { id:'milk',     icon:'🥛', h:15, hp:25, poop:20, ms:3300, for:['kush'] },
 ];
+const foodsNow = () => FOODS.filter(f => f.for.includes(S.char));
+const OVER_SICK = 50;                   // cuánto se puede pasar de lleno antes de enfermarse
 function openFeed(){
   if (!guard()) return;
   const p = pet();
   if (asleepNow()) return toast(trp('t.asleep'));
-  if (p.hunger >= 92) { startAnim('no', 900); sfx('no'); return toast(trp('t.notHungry')); }
+  // Kush NO come si no quiere; Spot, en cambio, come lo que le des (y ya veremos las consecuencias)
+  if (isKush() && p.hunger >= 92) { startAnim('no', 900); sfx('no'); return toast(trp('t.notHungry')); }
   showPane(`<h3>${tr('feed.title')}</h3>
-    <div class="row foods">${FOODS.map(f =>
+    <div class="row foods">${foodsNow().map(f =>
       `<button data-feed="${f.id}"><i>${f.icon}</i><b>${tr('food.'+f.id)}</b><small>${tr('food.'+f.id+'.sub')}</small></button>`).join('')}
     </div><button class="ghost" data-close>${tr('cancel')}</button>`);
 }
 function feed(id){
   hidePane();
   const F = FOODS.find(f => f.id === id), p = pet();
-  if (!F) return;
-  const before = p.hunger;
-  p.hunger = clamp(p.hunger + F.h); p.happy = clamp(p.happy + F.hp); p.poopAcc += F.poop;
+  if (!F || !F.for.includes(S.char)) return;
+  const before = p.hunger, name = petName();
+  const total = p.hunger + F.h, excess = Math.max(0, total - 100);           // lo que no le cabía
+  p.hunger = clamp(total); p.happy = clamp(p.happy + F.hp); p.poopAcc += F.poop;
   if (F.energy) p.energy = clamp(p.energy + F.energy);        // el helado da un empujón de azúcar
   startAnim('eat', F.ms, { food:id });
   sfx('eat');
+  if (excess > 0 && !isKush()) {                              // Spot comió de más: más popó (casi de inmediato) y, si se pasa mucho, se enferma
+    p.over = (p.over || 0) + excess;
+    const extra = Math.max(1, Math.round(excess / 15));
+    setTimeout(() => { p.poops = Math.min(3, p.poops + extra); sfx('no'); toast(tr('t.poopNow', { name })); hudAt = 0; save(); }, F.ms - 400);
+    if (p.over >= OVER_SICK && !p.sick) setTimeout(() => { p.sick = true; p.sickAcc = 0; sfx('no'); toast(tr('t.overSick', { name })); hudAt = 0; save(); }, F.ms + 300);
+    else if (p.over >= 25) setTimeout(() => toast(tr('t.stuffed', { name })), F.ms + 300);
+  }
   if (before < 80) gain(3);
   save();
 }
@@ -669,9 +696,14 @@ function pounce(z){
 
 function toggleLight(){
   if (!guard()) return;
-  if (isKush()) {                                     // Kush: apagar la luz la despierta (es nocturna)
-    if (clockNight()) return toast(tr('t.kushAlreadyNight'));
-    kushDark = !kushDark; hidePane(); hudAt = 0; toast(tr(kushDark ? 't.kushDark' : 't.kushLight'));
+  if (isKush()) {
+    // A Kush NO se le despierta cuando uno quiere: solo si su barra de energía está llena (y no se le avisa a nadie).
+    // Si no, abre un ojo un instante y sigue durmiendo. Despierta por su cuenta cuando se hace de noche.
+    const k = S.k;
+    if (kushAsleep()) {
+      if (k.energy >= 99) { k.nap = false; k.wokenUntil = now() + 2*3600*1000; sfx('mew'); hudAt = 0; save(); }
+      else startAnim('kushpeek', 1300);
+    } else startAnim('kushblink', 700);
     return;
   }
   if (S.sleeping) { S.sleeping = false; toast(tr('t.woke')); if (S.energy < 40) S.happy = clamp(S.happy - 5); }
@@ -790,15 +822,16 @@ document.querySelectorAll('[data-lang]').forEach(b => { b.onclick = () => setLan
 
 /* ---------- Kush (la gatita negra) ----------
    Duerme de día y despierta de noche según el RELOJ del aparato (?hour=14 fuerza la hora, para probar).
-   Apagar la 💡 la despierta a propósito (es nocturna). Su entrada es siempre la misma: noche cerrada →
-   dos ojos → rayo → la noche se despeja y ahí está. */
+   Se duerme sola si le queda poca energía y NO se le despierta a voluntad (secreto: solo con la barra llena).
+   Su entrada es siempre la misma: noche cerrada → dos ojos → rayo → la noche se despeja y ahí está. */
 const KUSH_NIGHT = [19, 6];                                   // de las 19:00 a las 6:00 es de noche
 const FORCE_HOUR = params.has('hour') ? +params.get('hour') : null;
 const hourNow = () => FORCE_HOUR ?? new Date().getHours();
 const clockNight = () => hourNow() >= KUSH_NIGHT[0] || hourNow() < KUSH_NIGHT[1];
-let kushDark = false;                                         // "luz apagada": noche a la fuerza
-const isNight = () => clockNight() || kushDark;
-const kushAsleep = () => !isNight();
+const KUSH_TIRED = 15;                                        // con tan poca energía se duerme sola
+const isNight = () => clockNight();                           // el escenario sigue al reloj
+// Duerme de día (salvo que la hayan despertado con la barra llena) y también cuando se queda sin energía
+const kushAsleep = () => S.k.nap || (!clockNight() && now() >= (S.k.wokenUntil || 0));
 const INTRO_MS = 4300;
 let kushIntro = null;
 function startKushIntro(){ kushIntro = { t0: now(), s1:false, s2:false, s3:false }; }
@@ -1029,7 +1062,8 @@ function drawDog(p,pal,st,fr,t){
   T = LAYER; LAYER.fill(0);
   // ---- cuerpo (con contorno)
   Pg([[42,51],[47+tw,45],[50+tw,40],[53+tw,45],[50,52],[44,53]],FUR);           // colita esponjada
-  E(32,47,12,7.5,FUR); E(27,50,3.4,4,FUR); E(37,50,3.4,4,FUR); E(25.5,53,4,2,FUR); E(38.5,53,4,2,FUR);
+  const fat = Math.min(4, (S.over || 0) / 12);                                   // si se empachó, la pancita se le hincha
+  E(32,47,12+fat,7.5+fat*.4,FUR); E(27,50,3.4,4,FUR); E(37,50,3.4,4,FUR); E(25.5,53,4,2,FUR); E(38.5,53,4,2,FUR);
   // orejas: una caída (izq.) y una medio parada (der.), detrás de la cara
   Pg([[22,21],[11,19+d*1.5],[8,29+d*1.5],[19,30]],FUR,1);
   Pg([[42,21],[51-d,10+d*3.2],[55-d,22+d*2.2],[45,31]],FUR,1);
@@ -1046,6 +1080,11 @@ function drawDog(p,pal,st,fr,t){
   outline(pal.line);
   flameEdge(pal,t,fa);                                                        // el pelo de las orillas ondea
   glow(pal,fr);
+  if (p.spot) {                                                               // LA MANCHA: de ahí le viene el nombre; se mueve según cómo se siente
+    const q = p.spot; ONLY = FUR;                                             // (solo se pinta sobre el pelo)
+    E(q.x,q.y,q.rx,q.ry,C.ink); E(q.x-q.rx*.7,q.y+q.ry*.45,q.rx*.55,q.ry*.6,C.ink); E(q.x+q.rx*.65,q.y-q.ry*.4,q.rx*.5,q.ry*.55,C.ink);
+    ONLY = null;
+  }
   // ---- un solo sombreado suave abajo
   ONLY = FUR; E(32,54,13,1.8,FURSH); ONLY = null;
   R(24,52,1,2,FURSH); R(26,52,1,2,FURSH); R(37,52,1,2,FURSH); R(39,52,1,2,FURSH);
@@ -1063,8 +1102,8 @@ function drawDog(p,pal,st,fr,t){
     else if (k==='half'){ R(cx-2.5,30.5,5,1.6,C.ink,1); }
     else if (k==='happy'){ R(cx-1,29.5,3,1,C.ink,1); R(cx-2.5,30.5,1.2,1.2,C.ink,1); R(cx+1.8,30.5,1.2,1.2,C.ink,1); }
     else if (k==='x'){ for (let i=-2;i<=2;i++){ R(cx+i,30+i,1,1,C.ink,1); R(cx+i,30-i,1,1,C.ink,1); } }
-    else if (k==='xd'){                                    // XD: el ojo izquierdo es ">" y el derecho "<"
-      for (let i=-3;i<=3;i++){ const w=Math.abs(i); R(left ? cx-3+(3-w) : cx-1+w, 30+i, 2, 1, C.ink, 1); }
+    else if (k==='xd'){                                    // XD: ojos apretados de tanta risa, ">" y "<" chiquitos que apuntan a la nariz
+      for (let i=-2;i<=2;i++){ const w=Math.abs(i); R(left ? cx+1-w : cx-3+w, 30+i, 2, 1, C.ink, 1); }
     }
   };
   const lk = p.look || 0;                                  // mirada: 1 casilla hacia donde va la pelota
@@ -1076,7 +1115,11 @@ function drawDog(p,pal,st,fr,t){
     else if (m==='sleep'){ R(30,37,5,1,C.ink,1); }
     else if (m==='open'){ E(32.5,38,3.8,2.8,C.mouth,1); E(32.5,39.2,2.4,1.4,C.tongue,1); if (p.tongue) E(33.5,41,2.2,2,C.tongue,1); }
     else if (m==='chew'){ E(32.5,37.8,2.6,1.6,C.mouth,1); E(32.5,38.6,1.6,.8,C.tongue,1); }
-    else if (m==='xd'){ E(32.5,40,5.6,3.3,C.mouth,1); R(28,37,9,1,C.white,1); E(33,42,3.4,1.6,C.tongue,1); }   // carcajada: bocota con dientes y lengua
+    else if (m==='xd'){                                    // carcajada: bocota en forma de "D" (arriba plana con dientes, abajo redonda) y lengua
+      for (let j=0;j<=6;j++){ const hw = Math.round(6.4*Math.sqrt(1-(j/7.4)*(j/7.4))); R(32.5-hw, 36+j, hw*2+1, 1, j===0 ? C.white : C.mouth, 1); }
+      E(33,41.2,3.6,1.7,C.tongue,1);
+      R(25,36,1,1,C.ink,1); R(40,36,1,1,C.ink,1); R(25,37,1,1,C.ink,1); R(40,37,1,1,C.ink,1);   // arruguitas de las mejillas
+    }
   };
   mouth(p.mouth);
   if (p.blush){ E(22.5,34.5,2.4,1.2,C.blush,1); E(42.5,34.5,2.4,1.2,C.blush,1); }
@@ -1121,6 +1164,22 @@ function eatPose(a, e, fr){
       if (e < 500) { q.eyes = 'open'; q.mouth = 'smile'; q.look = 1; }
       else if (e < 2700) { q.look = 1; q.mouth = 'smile'; q.lick = true; }
       else { q.eyes = 'xd'; q.mouth = 'open'; q.shake = (fr%2) ? 1 : -1; }
+      break;
+    case 'tuna':                                     // la pescadilla cae y se la come de la cabeza a la cola
+      if (e < 600) { q.eyes = 'open'; q.mouth = 'open'; } else { q.mouth = chew; q.eyes = (fr%6 < 4) ? 'happy' : 'open'; }
+      break;
+    case 'ham':                                      // tres mordiscos
+      if (e < 500) { q.eyes = 'open'; q.mouth = 'open'; }
+      else { const ph = (e - 900) % 700; q.mouth = (e > 900 && ph < 260) ? 'open' : 'chew'; }
+      break;
+    case 'shrimp':                                   // zarpazo al camarón que brinca
+      if (e < 900) {
+        q.eyes = 'open'; q.mouth = 'open'; q.look = 1;
+        if (e > 600) { const s = Math.sin(Math.PI * (e - 600) / 300); q.jump = s * 6; q.dx = s * 5; }
+      } else q.mouth = chew;
+      break;
+    case 'milk':                                     // lap, lap, lap…
+      q.eyes = 'closed'; q.mouth = (Math.floor(e / 280) % 2) ? 'open' : 'chew';
       break;
     case 'pizza':                                    // la atrapa al vuelo y ¡chomp!
       if (e < 950) {
@@ -1177,6 +1236,22 @@ function pose(fr,t){
       case 'wobble':p.wobble=(fr%2)?1:-1; break;
     }
   }
+  // La mancha negra de Spot (de ahí su nombre) se mueve según lo que siente
+  let sp;
+  if (p.eyes === 'xd') sp = { x:35+Math.sin(t*14)*3, y:49.2+Math.sin(t*18)*1.2, rx:4.2, ry:2.7 };            // de risa: se sacude y se infla
+  else if (g && g.phase === 'fly') sp = { x:34+Math.sin(t*8)*3, y:45, rx:3.6, ry:2.8 };                         // emocionado con la pelota
+  else if (a && a.type === 'eat') sp = { x:35, y:47.5, rx:3.2+((fr%2)?.9:0), ry:2.6+((fr%2)?.5:0) };            // late con cada bocado
+  else switch (m) {
+    case 'happy':  sp = { x:34+Math.sin(t*2.4)*4.5, y:46+Math.sin(t*4.8)*1.6, rx:3.6+Math.sin(t*6)*.5, ry:2.8 }; break;   // pasea feliz por la panza
+    case 'hungry': sp = { x:35, y:50, rx:2.1, ry:1.4 }; break;                                                         // se encoge y se hunde
+    case 'sad':    sp = { x:33, y:51, rx:2.4, ry:1.3 }; break;
+    case 'sleepy': sp = { x:37, y:48, rx:2.8, ry:2 }; break;
+    case 'sleep':  sp = { x:37, y:47.5, rx:3+Math.sin(t*1.8)*.4, ry:2.2+Math.sin(t*1.8)*.3 }; break;                // respira con él
+    case 'sick':   sp = { x:36+Math.sin(t*9)*1.6, y:47+Math.cos(t*7)*1.2, rx:2+Math.sin(t*11)*.7, ry:1.6 }; break;  // se marea
+    default:       sp = { x:37+Math.sin(t*1.3)*1.2, y:46+Math.sin(t*2)*.5, rx:3.2, ry:2.6 };                         // tranquilo: se mece
+  }
+  p.spot = sp;
+  if (p.eyes === 'xd') p.jump = Math.max(p.jump || 0, (fr%2) ? 1 : 0);                                          // la risa lo hace rebotar
   return p;
 }
 
@@ -1186,7 +1261,15 @@ const F = {
   cone:col('#e0a458'), coneDk:col('#c8863b'), scoop:col('#ffb3c7'), cherry:col('#d6283f'),
   cheese:col('#ffd45a'), crust:col('#d9953a'), pep:col('#d6453d'), ice:col('#9fd8ff'),
   bone:col('#f6ecd0'), boneSh:col('#cdbd92'), boneLine:col('#8d7a4a'),
+  tuna:col('#7fa6c9'), tunaBelly:col('#d6e6f2'), ham:col('#f09a9a'), hamFat:col('#fff1f1'), hamDk:col('#c96f6f'),
+  milk:col('#ffffff'), saucer:col('#b9b3d2'), saucerDk:col('#7d77a0'), shrimp:col('#ff8a4c'), shrimpDk:col('#d9622e'),
 };
+const FOODB = new Uint32Array(W*W);                 // lienzo temporal para recortar comida (el pescado "se va comiendo")
+function shrimpSprite(x,y,fr){
+  const f = fr % 2;
+  thickLine(x-4,y+1,x-1,y-2,F.shrimp,2.5); thickLine(x-1,y-2,x+3,y,F.shrimp,2.5); thickLine(x+3,y,x+4,y+3,F.shrimp,2);
+  poly([[x-4,y+1],[x-7,y-1+f],[x-7,y+3-f]],F.shrimpDk); put(x+3,y-1,C.ink); thickLine(x+4,y-1,x+7,y-3,F.shrimpDk,1);
+}
 function drumstick(x,y,bite){
   const r = 1 - bite*.8;
   thickLine(x+1,y+2,x+3,y+7,C.boneDk,2); ell(x+3,y+8,1.8,1.6,C.bone); ell(x+1,y+8,1.4,1.4,C.bone);
@@ -1256,6 +1339,42 @@ function drawFood(a, e, fr, mx, my){
       }
       break;
     }
+    case 'tuna': {                                    // el pescado cae a sus patitas y se lo come de la cabeza a la cola; quedan las espinas
+      const drop = Math.min(1, e / 600), cy = Math.round(-4 + (my + 11) * drop), fx = mx - 1;
+      const cut = (mx - 9) + (e < 600 ? 0 : Math.min(1, (e - 600) / 2300)) * 19;
+      if (e < 3300) {
+        rect(fx-6,cy,12,1,C.white); for (let i=0;i<4;i++) rect(fx-4+i*3,cy-2,1,5,C.white);
+        poly([[fx+5.5,cy],[fx+9,cy-2.5],[fx+9,cy+2.5]],C.white); ell(fx-7,cy,1.8,1.5,C.white);            // las espinas
+        FOODB.fill(0); T = FOODB;
+        ell(fx,cy,6.5,2.7,F.tuna); ell(fx,cy+1.2,5.6,1.1,F.tunaBelly);
+        poly([[fx+5.5,cy],[fx+10,cy-3.5],[fx+10,cy+3.5]],F.tuna); put(fx-4,cy-1,C.ink);
+        T = LAYER;
+        for (let i=0;i<W*W;i++) if (FOODB[i] && (i % W) >= cut) LAYER[i] = FOODB[i];                    // solo lo que aún no se ha comido
+      }
+      break;
+    }
+    case 'ham': {                                     // una lonja de jamón que se acaba en tres mordiscos
+      const slide = Math.min(1, e / 500), x = Math.round(mx - 5 + (1 - slide) * 20), y = my + 11;
+      const bites = e < 900 ? 0 : e < 1600 ? 1 : e < 2300 ? 2 : 3, w = [10, 7, 4, 0][bites];
+      if (w > 0) { rect(x-1,y-1,w+2,7,F.hamDk); rect(x,y,w,5,F.ham); rect(x,y,w,1,F.hamFat); put(x+2,y+3,F.hamDk); if (w > 5) put(x+6,y+2,F.hamDk); }
+      if (e > 900 && (e - 900) % 700 < 140) { put(x+w+1,y+1,F.ham); put(x+w+2,y+3,F.hamFat); }          // migajas
+      break;
+    }
+    case 'shrimp': {                                  // el camarón brinca desde la derecha y Kush lo atrapa de un zarpazo
+      if (e < 900) {
+        const k = e / 900, x = 60 - (60 - (mx + 4)) * k, y = 50 + (my - 50) * k - 30 * 4 * k * (1 - k);
+        shrimpSprite(Math.round(x), Math.round(y), fr);
+      } else if (e < 1100) sparkle(mx + 2, my - 2, true);
+      break;
+    }
+    case 'milk': {                                    // plato de leche entre sus patitas: lap, lap, lap… ¡y bigote de leche!
+      const slide = Math.min(1, e / 400), y = my + 16 + Math.round((1 - slide) * 8);
+      const lvl = 1 - Math.min(1, Math.max(0, (e - 400) / 2300)) * .75;
+      ell(mx,y,8.5,2.3,F.saucerDk); ell(mx,y-.3,8,2,F.saucer); ell(mx,y-.6,6.6 * lvl + 1,1.4,F.milk);
+      if (e > 400 && Math.floor(e / 280) % 2) { thickLine(mx,my+1,mx,my+4,C.tongue,2); put(mx-3,y-3,F.milk); put(mx+4,y-2,F.milk); }   // lengüetazo + salpicaduras
+      if (e > 2600) { rect(mx-4,my-1,3,1,F.milk); rect(mx+2,my-1,3,1,F.milk); }                            // bigote de leche
+      break;
+    }
     case 'pizza': {                                   // la rebanada vuela por el aire hasta su boca
       if (e < 950) {
         const k = e / 950, sx = mx + 30, x = sx + (mx - sx) * k, y = (my - 6) + 4 * k - 26 * 4 * k * (1 - k);
@@ -1288,8 +1407,8 @@ function drawEffects(pal,p,fr,t,st){
     const o = Math.floor(t*2)%3, Z = ['xxxxx','...x.','..x..','.x...','xxxxx'];
     bmp(Z,48+o,14-o*2,{x:C.gold}); if (o>0) bmp(Z,56,7-o,{x:C.goldHi});
   }
-  if (p.eyes === 'xd') {                              // lagrimitas de risa que salen disparadas
-    for (const s of [-1,1]) { const k = fr%4; put(32+s*(11+k), 31+k*2, C.tear); put(32+s*(11+k), 32+k*2, C.tear); put(32+s*(14+k), 30+k, C.tear); }
+  if (p.eyes === 'xd') {                              // destellitos de pura diversión (nada de lágrimas: Spot nunca llora)
+    sparkle(17 + (fr%3), 16 + (fr%2)*2, false); sparkle(47 - (fr%3), 14 + ((fr+1)%2)*2, true); sparkle(10, 38, false);
   }
   if (a){
     const e = now() - a.t0;
@@ -1393,6 +1512,7 @@ function kushPose(fr,t){
   if (a) {
     const e = now() - a.t0;
     if (a.type === 'kushpeek') p.peek = true;
+    if (a.type === 'kushblink') p.eyes = 'closed';
     if (a.type === 'kushpet' || a.type === 'kushwin') { p.eyes = 'happy'; p.tail = [0,2,0,2][fr%4]; p.ears = 'norm'; }
     if (a.type === 'clean') { p.eyes = 'happy'; p.tail = [0,2,0,2][fr%4]; }
     if (a.type === 'med') p.eyes = 'closed';
@@ -1400,7 +1520,7 @@ function kushPose(fr,t){
     if (a.type === 'eat') {
       const q = eatPose(a, e, fr);
       p.eyes = q.eyes === 'xd' ? 'happy' : q.eyes; p.mouth = q.mouth === 'smile' ? 'w' : q.mouth; p.ears = 'norm';
-      p.tail = [0,2,0,2][fr%4]; p.shake = q.shake; p.dy = -q.jump;
+      p.tail = [0,2,0,2][fr%4]; p.shake = q.shake; p.dy = -q.jump; p.dx = q.dx || 0;
     }
   }
   return p;
