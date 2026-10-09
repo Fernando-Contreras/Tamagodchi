@@ -289,13 +289,13 @@ const I18N = {
     't.allClean':'All clean ✨', 't.notSick':"{name} isn't sick 🙂", 't.cured':'💊 {name} is cured!',
     't.born':'🐶 Spot, the Dog God, is born!', 't.newEgg':'🥚 A new cloud egg appeared',
     't.kushSleeping':'Kush is sleeping. Let her be. 💤',
-    't.stuffed':'😵 {name} is stuffed…', 't.overSick':'🤢 {name} ate way too much and got sick', 't.poopNow':'💩 Oops… {name} had to go',
+    't.wish':'🌠 Spot made a wish… My Happy Thing?', 't.stuffed':'😵 {name} is stuffed…', 't.overSick':'🤢 {name} ate way too much and got sick', 't.poopNow':'💩 Oops… {name} had to go',
     // comida
     'feed.title':'What shall we feed?', cancel:'Cancel',
     'food.kibble':'Kibble',   'food.kibble.sub':'filling',
     'food.chicken':'Chicken', 'food.chicken.sub':'yummy!',
     'food.bone':'Bone',       'food.bone.sub':'chewy',
-    'food.sausage':'Sausage', 'food.sausage.sub':'slurp!',
+    'food.cake':'Cake',       'food.cake.sub':'make a wish!',
     'food.icecream':'Ice cream', 'food.icecream.sub':'brain freeze',
     'food.pizza':'Pizza',     'food.pizza.sub':'catch it!',
     'food.tuna':'Tuna',       'food.tuna.sub':'fishy!',
@@ -359,12 +359,12 @@ const I18N = {
     't.allClean':'Todo limpio ✨', 't.notSick':'{name} no está enfermo 🙂', 'k.t.notSick':'{name} no está enferma 🙂', 't.cured':'💊 ¡{name} se curó!',
     't.born':'🐶 ¡Nació Spot, el Dios Perro!', 't.newEgg':'🥚 Un nuevo huevo de nube apareció',
     't.kushSleeping':'Kush está dormida. Déjala. 💤',
-    't.stuffed':'😵 {name} está empachado…', 't.overSick':'🤢 {name} comió demasiado y se enfermó', 't.poopNow':'💩 Uy… {name} tuvo que ir',
+    't.wish':'🌠 Spot pidió un deseo… ¿My Happy Thing?', 't.stuffed':'😵 {name} está empachado…', 't.overSick':'🤢 {name} comió demasiado y se enfermó', 't.poopNow':'💩 Uy… {name} tuvo que ir',
     'feed.title':'¿Qué le damos?', cancel:'Cancelar',
     'food.kibble':'Croquetas', 'food.kibble.sub':'llenan',
     'food.chicken':'Pollo',    'food.chicken.sub':'¡rico!',
     'food.bone':'Hueso',       'food.bone.sub':'a roer',
-    'food.sausage':'Salchicha','food.sausage.sub':'¡slurp!',
+    'food.cake':'Pastel',      'food.cake.sub':'¡un deseo!',
     'food.icecream':'Helado',  'food.icecream.sub':'congelante',
     'food.pizza':'Pizza',      'food.pizza.sub':'¡atrápala!',
     'food.tuna':'Atún',        'food.tuna.sub':'¡pescado!',
@@ -556,7 +556,7 @@ const FOODS = [                        // for = quién la come (los gatos no com
   { id:'kibble',   icon:'🥣', h:25, hp:2,  poop:25, ms:2500, for:['spot','kush'] },
   { id:'chicken',  icon:'🍗', h:40, hp:10, poop:45, ms:3300, for:['spot','kush'] },
   { id:'bone',     icon:'🦴', h:12, hp:18, poop:10, ms:3500, for:['spot'] },
-  { id:'sausage',  icon:'🌭', h:30, hp:8,  poop:30, ms:3100, for:['spot'] },
+  { id:'cake',     icon:'🍰', h:28, hp:22, poop:30, ms:3500, for:['spot'] },
   { id:'icecream', icon:'🍦', h:8,  hp:28, poop:15, ms:3700, for:['spot'], energy:8 },
   { id:'pizza',    icon:'🍕', h:45, hp:12, poop:50, ms:3100, for:['spot'] },
   { id:'tuna',     icon:'🐟', h:35, hp:15, poop:30, ms:3400, for:['kush'] },
@@ -587,6 +587,7 @@ function feed(id){
   if (F.energy) p.energy = clamp(p.energy + F.energy);        // el helado da un empujón de azúcar
   startAnim('eat', F.ms, { food:id });
   sfx('eat');
+  if (id === 'cake') setTimeout(() => toast(tr('t.wish')), 1300);        // sopla la vela y pide un deseo (¿será My Happy Thing?)
   if (excess > 0 && !isKush()) {                              // Spot comió de más: más popó (casi de inmediato) y, si se pasa mucho, se enferma
     p.over = (p.over || 0) + excess;
     const extra = Math.max(1, Math.round(excess / 15));
@@ -1166,9 +1167,10 @@ function eatPose(a, e, fr){
       if (e < 450) { q.eyes = 'open'; q.mouth = 'open'; }
       else { q.look = Math.floor(e / 380) % 2 ? 1 : -1; q.mouth = chew; }
       break;
-    case 'sausage':                                  // slurp de espagueti
-      if (e < 1000) { q.eyes = 'open'; q.mouth = 'open'; q.tongue = true; }
-      else if (e < 2500) { q.eyes = 'open'; q.mouth = (fr%2) ? 'open' : 'chew'; }
+    case 'cake':                                     // mira la velita, sopla, pide un deseo y se lo come a bocados
+      if (e < 600) { q.eyes = 'open'; q.mouth = 'smile'; }
+      else if (e < 1300) { q.eyes = 'happy'; q.mouth = 'chew'; }                       // sopla
+      else if (e < 1500) { q.eyes = 'open'; q.mouth = 'open'; }
       else q.mouth = chew;
       break;
     case 'icecream':                                 // lame, lame… ¡y le da el congelamiento!
@@ -1288,7 +1290,8 @@ const SPOT = { x:37, y:46, rx:2.1, ry:1.6, brow:0 };         // estado suavizado
 
 /* ---------- comida: cada una con su propia animación ---------- */
 const F = {
-  sausage:col('#d4573a'), sausageDk:col('#a83b27'), sausageHi:col('#f08a6a'),
+  sponge:col('#ffe0a0'), spongeDk:col('#e3b86a'), frost:col('#ffb3c7'), frostDk:col('#f08aa8'), cakeLine:col('#8d6a4a'),
+  flame:col('#ffd84a'), flameHi:col('#fff7c4'), smoke:col('#c9c4d8'),
   cone:col('#e0a458'), coneDk:col('#c8863b'), scoop:col('#ffb3c7'), cherry:col('#d6283f'),
   cheese:col('#ffd45a'), crust:col('#d9953a'), pep:col('#d6453d'), ice:col('#9fd8ff'),
   bone:col('#f6ecd0'), boneSh:col('#cdbd92'), boneLine:col('#8d7a4a'),
@@ -1340,18 +1343,24 @@ function drawFood(a, e, fr, mx, my){
       }
       break;
     }
-    case 'sausage': {                                 // baja del cielo y se la sorbe como espagueti
-      // entra por la derecha, por debajo de los ojos (no le tapa la cara), y se la va sorbiendo como espagueti
-      const S0 = [mx + 28, my - 6], M = [mx + 1, my - 1];
-      const P = u => [S0[0] + (M[0]-S0[0])*u, S0[1] + (M[1]-S0[1])*u];
-      const k1 = Math.min(1, e / 900), k2 = e < 900 ? 0 : Math.min(1, (e - 900) / 1500);
-      const uBot = k1, uTop = k2 > 0 ? .45 + .55*k2 : Math.max(0, k1 - .55);
-      if (k2 < 1 && uTop < uBot - .02) {
-        const wob = Math.sin(e/80) * (.6 + k2), [x0,y0] = P(uTop), [x1,y1] = P(uBot);
-        thickLine(x0 + wob, y0, x1, y1, F.sausage, 3);
-        thickLine(x0 + wob - 1, y0 - 1, x1 - 1, y1 - 1, F.sausageHi, 1);
-        for (let u = uTop + .06; u < uBot; u += .13) { const [gx,gy] = P(u); put(gx + 1, gy + 1, F.sausageDk); put(gx - 1, gy + 1, F.sausageDk); }   // los gajos
+    case 'cake': {                                    // pastel con velita: sopla, pide un deseo, se lo come a bocados y ¡termina con crema en la nariz!
+      const rise = Math.min(1, e / 600), x = mx - 6, y = my + 7 + Math.round((1 - rise) * 16);       // y = parte de arriba del bizcocho
+      const bites = e < 1500 ? 0 : e < 2000 ? 1 : e < 2500 ? 2 : e < 3000 ? 3 : 4, w = [12, 9, 6, 3, 0][bites];
+      if (w > 0) {
+        rect(x-1,y-4,w+2,11,F.cakeLine);                                                           // contorno
+        rect(x,y,w,6,F.sponge); rect(x,y+5,w,1,F.spongeDk);                                        // bizcocho
+        rect(x,y-3,w,4,F.frost); for (let i = 1; i < w; i += 3) rect(x+i,y+1,1,2,F.frost);          // crema con gotitas que escurren
+        put(x+1,y-3,C.white); if (w > 5) ell(x+4,y-4,1.5,1.5,F.cherry);                              // fresita
       }
+      if (w >= 12 && e < 1300) {                                                                   // la velita (se apaga al soplar)
+        rect(x+9,y-9,2,6,F.ice); rect(x+9,y-8,1,1,C.white); rect(x+10,y-6,1,1,C.white); rect(x+9,y-4,1,1,C.white);   // velita de rayitas (azul, que sobre el pelo blanco se ve)
+        const lean = e > 800 ? -1.4 * Math.sin((e - 800) / 500 * Math.PI / 2) : 0, sz = e > 800 ? 1.2 : 1.5;
+        ell(x+9.5+lean, y-11, sz, sz*1.5, F.flame); ell(x+9.5+lean, y-10.6, sz*.5, sz*.9, F.flameHi);
+      }
+      if (e >= 1300 && e < 1800) put(x+9 - Math.round((e-1300)/160), y-9 - Math.round((e-1300)/45), F.smoke);       // humito
+      if (e >= 1300 && e < 2400) sparkle(Math.round(x+9+Math.sin(e/120)*2), Math.round(y-10-(e-1300)/55), true);   // el deseo sube al cielo
+      if (bites > 0 && bites < 4 && e - [1500,2000,2500,3000][bites-1] < 200) { put(x+w+2,y+1,F.sponge); put(x+w+3,y+3,F.frost); put(x+w+1,y-2,F.sponge); }   // migajas
+      if (e > 2900) { rect(mx-2, my-6, 3, 2, F.frost); put(mx-1, my-7, F.frost); }                // crema en la nariz
       break;
     }
     case 'icecream': {                                // cono a un lado; lame; al final, congelamiento cerebral
