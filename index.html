@@ -476,7 +476,8 @@ function advancePet(p, name, min, away, sl){
 
   if (!sl) {
     p.poopAcc += min * (away ? .3 : 1);
-    while (p.poopAcc >= POOP_EVERY_MIN) {
+    const eating = !!(A && A.type === 'eat' && now() < A.t0 + A.dur + 1200);       // mientras come (y un momento después) no hace popó: se le acumula y sale luego
+    while (!eating && p.poopAcc >= POOP_EVERY_MIN) {
       p.poopAcc -= POOP_EVERY_MIN;
       if (p.poops < (away ? 2 : 3)) p.poops++;
     }
@@ -591,8 +592,9 @@ function feed(id){
   if (excess > 0 && !isKush()) {                              // Spot comió de más: más popó (casi de inmediato) y, si se pasa mucho, se enferma
     p.over = (p.over || 0) + excess;
     const extra = Math.max(1, Math.round(excess / 15));
-    setTimeout(() => { p.poops = Math.min(3, p.poops + extra); sfx('no'); toast(tr('t.poopNow', { name })); hudAt = 0; save(); }, F.ms - 400);
-    if (p.over >= OVER_SICK && !p.sick) setTimeout(() => { p.sick = true; p.sickAcc = 0; sfx('no'); toast(tr('t.overSick', { name })); hudAt = 0; save(); }, F.ms + 300);
+    // Nada de popó mientras come: primero termina el bocado y DESPUÉS pasa lo que tenga que pasar
+    setTimeout(() => { p.poops = Math.min(3, p.poops + extra); sfx('no'); toast(tr('t.poopNow', { name })); hudAt = 0; save(); }, F.ms + 900);
+    if (p.over >= OVER_SICK && !p.sick) setTimeout(() => { p.sick = true; p.sickAcc = 0; sfx('no'); toast(tr('t.overSick', { name })); hudAt = 0; save(); }, F.ms + 1800);
     else if (p.over >= 25) setTimeout(() => toast(tr('t.stuffed', { name })), F.ms + 300);
   }
   if (before < 80) gain(3);
@@ -1102,7 +1104,8 @@ function drawDog(p,pal,st,fr,t){
   }
   // ---- un solo sombreado suave abajo
   ONLY = FUR; E(32,54,13,1.8,FURSH); ONLY = null;
-  R(24,52,1,2,FURSH); R(26,52,1,2,FURSH); R(37,52,1,2,FURSH); R(39,52,1,2,FURSH);
+  // patitas SIEMPRE visibles (antes eran del color del pelo y se perdían): separador entre las dos patas y dos deditos en cada una
+  R(31.5,49,1,5,pal.line); R(23,52.5,1,2,pal.line); R(26,52.5,1,2,pal.line); R(37,52.5,1,2,pal.line); R(40,52.5,1,2,pal.line);
   // ---- orejas por dentro
   Pg([[19,23],[13,22+d*1.5],[11.5,27+d*1.5],[18.5,28.5]],C.pink,1); Pg([[44.5,23],[50-d,14+d*3],[52-d,21+d*2.2],[45.5,28.5]],C.pink,1);
   // ---- cara
@@ -1310,7 +1313,7 @@ function shrimpSprite(x,y,fr){
 function drumstick(x,y,bite){
   const r = 1 - bite*.8;
   thickLine(x+1,y+2,x+3,y+7,C.boneDk,2); ell(x+3,y+8,1.8,1.6,C.bone); ell(x+1,y+8,1.4,1.4,C.bone);
-  if (r > .08) { ell(x,y,3.6*r+.3,3.1*r+.2,C.meat); put(x-1,y-1,col('#e6a35c')); }
+  if (r > .08) { const mxp = x + bite * 2.2; ell(mxp,y,3.6*r+.3,3.1*r+.2,C.meat); put(Math.round(mxp)-1,y-1,col('#e6a35c')); }   // la carne se va acabando de izquierda (boca) a derecha
 }
 function pizzaSlice(x,y){
   poly([[x-5,y-3],[x+5,y-3],[x,y+7]],F.cheese);
@@ -1330,8 +1333,10 @@ function drawFood(a, e, fr, mx, my){
     case 'chicken': {                                 // muslo que se acerca y se va acabando a mordidas
       const total = 2500;
       let x, y, bite = 0;
-      if (e < 600) { const k = e / 600; x = mx + 13 - 12*k; y = my - 24 + 22*k; }
-      else { x = mx + 1; y = my - 2; bite = Math.min(1, (e - 600) / 1900); }
+      // lo sostiene a la altura de la BOCA, por el lado derecho (antes quedaba encima de la nariz y parecía que lo inhalaba)
+      const tx = mx + 6, ty = my + 3;
+      if (e < 600) { const k = e / 600; x = tx + 12 * (1 - k); y = ty - 24 * (1 - k); }
+      else { x = tx; y = ty; bite = Math.min(1, (e - 600) / 1900); }
       if (e < total + 400) drumstick(Math.round(x), Math.round(y + Math.max(0,(e - total)/400) * 16), bite);   // al final cae el huesito
       break;
     }
