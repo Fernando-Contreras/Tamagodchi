@@ -106,18 +106,28 @@ body{
 .gameui{position:absolute;inset:0;z-index:4;pointer-events:none}
 .gameui[hidden]{display:none}
 .gameui>*{pointer-events:auto}
-.gbtn{
-  position:absolute;top:44%;transform:translateY(-50%);width:54px;height:54px;border-radius:50%;
-  font:inherit;font-size:24px;line-height:1;cursor:pointer;background:#fffdf5e6;border:3px solid var(--ink);
-  box-shadow:0 4px 0 var(--ink);padding:0;
-}
-.gbtn:active{transform:translateY(calc(-50% + 4px));box-shadow:none}
-.gbtn:disabled{opacity:.4}
-.gbtn.gl{left:8px}.gbtn.gr{right:8px}
 .gchip{
-  position:absolute;left:50%;bottom:8px;transform:translateX(-50%);background:#fffdf5e6;border:3px solid var(--ink);
-  border-radius:999px;padding:3px 12px;font-weight:700;font-size:13px;white-space:nowrap;
+  position:absolute;left:8px;top:8px;background:#fffdf5e6;border:3px solid var(--ink);
+  border-radius:999px;padding:2px 10px;font-weight:700;font-size:13px;white-space:nowrap;
 }
+/* Kush: tres columnas invisibles para dar el zarpazo + botón para cambiar entre ver y oír */
+.gzones{position:absolute;left:0;right:0;top:40px;bottom:50px;display:flex}
+.gzones button{flex:1;background:transparent;border:0;cursor:pointer;padding:0}
+.gzones button:active{background:#ffffff22}
+.gmode{
+  position:absolute;left:50%;bottom:8px;transform:translateX(-50%);font:inherit;font-weight:700;font-size:16px;
+  cursor:pointer;color:var(--ink);background:#fffdf5f2;border:3px solid var(--ink);border-radius:999px;padding:5px 18px;
+  box-shadow:0 4px 0 var(--ink);white-space:nowrap;
+}
+.gmode:active{transform:translateX(-50%) translateY(4px);box-shadow:none}
+.gameui.sg .gzones,.gameui.sg .gmode{display:none}
+.gameui.kg .gzones,.gameui.kg .gmode{display:flex}
+.gameui.kg .gmode{display:block}
+/* menú de comida: 6 opciones en cuadrícula */
+.row.foods{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.row.foods>button{display:flex;flex-direction:column;align-items:center;gap:0;padding:5px 2px;line-height:1.15;font-size:13px;box-shadow:0 2px 0 var(--ink);border-width:2.5px}
+.row.foods i{font-style:normal;font-size:22px;line-height:1.1}
+.row.foods small{font-size:10.5px;margin-top:0}
 .gquit{
   position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;font:inherit;font-size:14px;line-height:1;
   cursor:pointer;background:#fffdf5e6;border:2.5px solid var(--ink);padding:0;
@@ -179,9 +189,9 @@ body{
         <canvas id="cv" width="64" height="64" data-i18n-aria="aria.canvas"></canvas>
         <div class="gameui" id="gameUi" hidden>
           <button class="gquit" id="gQuit" data-i18n-aria="game.exit">✕</button>
-          <button class="gbtn gl" data-g="L" data-i18n-aria="game.left">⬅️</button>
-          <button class="gbtn gr" data-g="R" data-i18n-aria="game.right">➡️</button>
           <div class="gchip" id="gChip"></div>
+          <div class="gzones" id="gZones"><button data-z="0"></button><button data-z="1"></button><button data-z="2"></button></div>
+          <button class="gmode" id="gMode"></button>
         </div>
         <div class="toast" id="toast" role="status"></div>
         <div class="pane" id="pane" hidden></div>
@@ -266,25 +276,35 @@ const I18N = {
     title:'The Dog God · Tamagodchi', 'aria.canvas':'Spot, the Dog God', close:'Close',
     feed:'Feed', play:'Play', light:'Light', clean:'Clean', med:'Medicine', info:'Dogerhood',
     'bar.hunger':'Hunger', 'bar.happy':'Happiness', 'bar.energy':'Energy',
-    foot:'We bark for Spot. 🐾',
+    foot:'Made by JuanFer · All rights reserved',
     'stage.egg':'Cloud egg', 'stage.cachorro':'Cloud pup', 'stage.spot':'Spot', 'stage.dios':'Spot, the Dog God',
     // avisos
-    't.woke':'☀️ Spot woke up', 't.tired':'💤 Spot fell asleep from exhaustion', 't.sick':'🤒 Spot got sick',
-    't.back':'Welcome back! Spot missed you 🐾', 't.hungry':'🍗 Spot is hungry', 't.wantsPlay':'🥺 Spot wants to play',
+    't.woke':'☀️ Spot woke up', 't.tired':'💤 Spot fell asleep from exhaustion', 't.sick':'🤒 {name} got sick',
+    't.back':'Welcome back! {name} missed you 🐾', 't.hungry':'🍗 {name} is hungry', 't.wantsPlay':'🥺 {name} wants to play',
     't.joined':'🐾 {name} joined the Dogerhood!', 't.evolved':'✨ Spot evolved: {stage}!',
-    't.tapEgg':'Tap the egg first 🥚', 't.asleep':'Spot is asleep… 💤', 't.notHungry':"Spot isn't hungry",
-    't.cantPlaySick':"Spot doesn't feel well enough to play 🤒", 't.tooTired':'Spot is too tired 💤',
-    't.won':'🎉 You won {w}/5! Spot is happy', 't.lost':'You got {w}/5. Rematch time!',
-    't.goodnight':'💤 Goodnight, Spot', 't.notSleepy':"Spot isn't sleepy", 't.shh':'Shhh… he is asleep 💤', 't.shhPet':'Shhh… sleeping 💤',
-    't.allClean':'All clean ✨', 't.notSick':"Spot isn't sick 🙂", 't.cured':'💊 Spot is cured!',
+    't.tapEgg':'Tap the egg first 🥚', 't.asleep':'{name} is asleep… 💤', 't.notHungry':"{name} isn't hungry",
+    't.cantPlaySick':"{name} doesn't feel well enough to play 🤒", 't.tooTired':'{name} is too tired 💤',
+    't.won':'🎉 {w}/5! {name} is thrilled', 't.lost':'{w}/5. Rematch time!',
+    't.goodnight':'💤 Goodnight, Spot', 't.notSleepy':"Spot isn't sleepy", 't.shh':'Shhh… {name} is asleep 💤', 't.shhPet':'Shhh… sleeping 💤',
+    't.allClean':'All clean ✨', 't.notSick':"{name} isn't sick 🙂", 't.cured':'💊 {name} is cured!',
     't.born':'🐶 Spot, the Dog God, is born!', 't.newEgg':'🥚 A new cloud egg appeared',
-    // menús y minijuego
-    'feed.title':'What do we give him?', 'feed.kibble':'🥣 Kibble', 'feed.kibbleSub':'fills the belly',
-    'feed.chicken':'🍗 Chicken', 'feed.chickenSub':'he loves it!', cancel:'Cancel',
-    'game.title':"Let's play! 🎾", 'game.prompt':'Spot throws the ball… which way will it go?',
-    'game.left':'⬅️ Left', 'game.right':'Right ➡️', 'game.hits':'Hits: {n}', 'game.exit':'Quit',
-    'game.went':'The ball went {dir}… {res}', 'game.dirL':'left', 'game.dirR':'right',
-    'game.hit':'you got it! ✅', 'game.miss':'you missed! ❌',
+    't.kushSleeping':'Kush is sleeping. Let her be. 💤',
+    't.kushDark':'🌙 Lights off. Kush wakes up.', 't.kushLight':'☀️ Lights on. Kush goes back to sleep.',
+    't.kushAlreadyNight':"It's already night. Kush is awake. 🌙",
+    // comida
+    'feed.title':'What shall we feed?', cancel:'Cancel',
+    'food.kibble':'Kibble',   'food.kibble.sub':'filling',
+    'food.chicken':'Chicken', 'food.chicken.sub':'yummy!',
+    'food.bone':'Bone',       'food.bone.sub':'chewy',
+    'food.sausage':'Sausage', 'food.sausage.sub':'slurp!',
+    'food.icecream':'Ice cream', 'food.icecream.sub':'brain freeze',
+    'food.pizza':'Pizza',     'food.pizza.sub':'catch it!',
+    // minijuegos
+    'game.exit':'Quit', 'game.chip':'🎾 {r}/5 · ✔ {n}',
+    'game.prompt':'Tap anywhere to jump and catch the ball!', 'game.catch':'Nice catch! 🎉', 'game.missed':'Missed it! 🥲',
+    'kgame.chip':'🐭 {r}/5 · ✔ {n}', 'kgame.prompt':'You can hear or see… never both. Find the mouse!',
+    'kgame.got':'Gotcha! 🐭', 'kgame.escaped':'It got away…', 'kgame.nothing':'Nothing there…',
+    'kgame.see':'👀 See', 'kgame.hear':'👂 Hear',
     // Dogerhood
     'm.egg':'Cloud egg', 'm.age':'Age: {a}', 'm.notBorn':'Not born yet',
     'dev.egg':'Devotion', 'dev.cachorro':'Devotion → Spot', 'dev.spot':'Devotion → Dog God', 'dev.dios':'Devotion (the whole pack)',
@@ -294,14 +314,16 @@ const I18N = {
     'reset.confirm':'Reset everything? Spot will become an egg again and devotion is lost.',
     // frases de Spot
     'say.egg':['Tap the egg to hatch Spot 🥚'],
-    'say.hungry':["I'm hungry! 🍗", 'My belly goes XD…'],
-    'say.sad':['I want to play… 🥺', 'I feel lonely'],
+    'say.hungry':["I'm hungry! 🍗", 'Even gods get hungry…'],
+    'say.sad':['I want to play… 🥺', 'I feel lonely', 'Where is My Happy Thing…?'],
     'say.sleepy':["I'm sleepy… 💤"], 'say.sick':["I don't feel well… 🤒"], 'say.sleep':['Zzz… 💤'],
-    'say.happy':['XD 🐾', 'We bark for Spot 🐾', "I'm so happy! ✨"],
-    'say.ok':['XD 🐾', 'Wanna play?', 'Just watching the clouds ☁️'], 'say.poop':["There's poop! 💩"],
-    'kush.say.sleep':['Zzz… 🐈‍⬛💤'], 'kush.say.awake':['…', 'I have been watching. 👁️', 'Mrrp.'],
-    't.kushNeeds':"Kush doesn't need your care. She's watching. 🐈‍⬛", 't.kushSleeping':'Kush is sleeping. Let her be. 💤',
-    'game.chip':'🎾 {r}/5 · ✔ {n}',
+    'say.happy':['I will find My Happy Thing! ✨', 'We bark for Spot 🐾', "I'm so happy! ✨"],
+    'say.ok':['I will find My Happy Thing.', "I forgot what it is. But I will find it.", 'Wanna play?', 'Just watching the clouds ☁️', 'What was My Happy Thing again…?'],
+    'say.poop':["There's poop! 💩"],
+    // frases de Kush
+    'kush.say.sleep':['Zzz… 🐈‍⬛💤'], 'kush.say.hear':['I hear everything.'], 'kush.say.see':['I see everything.'],
+    'kush.say.hungry':['I require sustenance.'], 'kush.say.sad':['I am bored. Entertain me.'],
+    'kush.say.sleepy':['I will rest soon.'], 'kush.say.sick':['I am… unwell.'], 'kush.say.poop':['The litter. Now. 💩'],
     // Dogerhood (según el póster)
     'dog.collie.name':'Border Collie',  'dog.collie.breed':'Border Collie',  'dog.collie.role':'The strategist, the mind.',          'dog.collie.origin':'Scotland',
     'dog.bimba.name':'Bimba',           'dog.bimba.breed':'Corgi',           'dog.bimba.role':'The chaos bringer.',                  'dog.bimba.origin':'Wales (proudly Latina)',
@@ -320,23 +342,34 @@ const I18N = {
     title:'The Dog God · Tamagodchi', 'aria.canvas':'Spot, el Dios Perro', close:'Cerrar',
     feed:'Comer', play:'Jugar', light:'Luz', clean:'Limpiar', med:'Medicina', info:'Dogerhood',
     'bar.hunger':'Hambre', 'bar.happy':'Alegría', 'bar.energy':'Energía',
-    foot:'We bark for Spot. 🐾',
+    foot:'Hecho por JuanFer · Todos los derechos reservados',
     'stage.egg':'Huevo de nube', 'stage.cachorro':'Cachorro de nube', 'stage.spot':'Spot', 'stage.dios':'Spot, el Dios Perro',
-    't.woke':'☀️ Spot se despertó', 't.tired':'💤 Spot se quedó dormido de cansancio', 't.sick':'🤒 Spot se enfermó',
-    't.back':'¡Volviste! Spot te extrañó 🐾', 't.hungry':'🍗 Spot tiene hambre', 't.wantsPlay':'🥺 Spot quiere jugar',
+    't.woke':'☀️ Spot se despertó', 't.tired':'💤 Spot se quedó dormido de cansancio', 't.sick':'🤒 {name} se enfermó',
+    't.back':'¡Volviste! {name} te extrañó 🐾', 't.hungry':'🍗 {name} tiene hambre', 't.wantsPlay':'🥺 {name} quiere jugar',
     't.joined':'🐾 ¡{name} se unió al Dogerhood!', 't.evolved':'✨ ¡Spot evolucionó: {stage}!',
-    't.tapEgg':'Primero toca el huevo 🥚', 't.asleep':'Spot está dormido… 💤', 't.notHungry':'Spot no tiene hambre',
-    't.cantPlaySick':'Spot no se siente bien para jugar 🤒', 't.tooTired':'Spot está muy cansado 💤',
-    't.won':'🎉 ¡Ganaste {w}/5! Spot está feliz', 't.lost':'Ganaste {w}/5. ¡Hay revancha!',
-    't.goodnight':'💤 Buenas noches, Spot', 't.notSleepy':'Spot no tiene sueño', 't.shh':'Shhh… está dormido 💤', 't.shhPet':'Shhh… duerme 💤',
-    't.allClean':'Todo limpio ✨', 't.notSick':'Spot no está enfermo 🙂', 't.cured':'💊 ¡Spot se curó!',
+    't.tapEgg':'Primero toca el huevo 🥚', 't.asleep':'{name} está dormido… 💤', 'k.t.asleep':'{name} está dormida… 💤',
+    't.notHungry':'{name} no tiene hambre',
+    't.cantPlaySick':'{name} no se siente bien para jugar 🤒', 't.tooTired':'{name} está muy cansado 💤', 'k.t.tooTired':'{name} está muy cansada 💤',
+    't.won':'🎉 ¡{w}/5! {name} está feliz', 't.lost':'{w}/5. ¡Hay revancha!',
+    't.goodnight':'💤 Buenas noches, Spot', 't.notSleepy':'Spot no tiene sueño',
+    't.shh':'Shhh… {name} está dormido 💤', 'k.t.shh':'Shhh… {name} está dormida 💤', 't.shhPet':'Shhh… duerme 💤',
+    't.allClean':'Todo limpio ✨', 't.notSick':'{name} no está enfermo 🙂', 'k.t.notSick':'{name} no está enferma 🙂', 't.cured':'💊 ¡{name} se curó!',
     't.born':'🐶 ¡Nació Spot, el Dios Perro!', 't.newEgg':'🥚 Un nuevo huevo de nube apareció',
-    'feed.title':'¿Qué le damos?', 'feed.kibble':'🥣 Croquetas', 'feed.kibbleSub':'llena la pancita',
-    'feed.chicken':'🍗 Pollo', 'feed.chickenSub':'¡lo adora!', cancel:'Cancelar',
-    'game.title':'¡A jugar! 🎾', 'game.prompt':'Spot lanza la pelota… ¿hacia dónde irá?',
-    'game.left':'⬅️ Izquierda', 'game.right':'Derecha ➡️', 'game.hits':'Aciertos: {n}', 'game.exit':'Salir',
-    'game.went':'La pelota fue a la {dir}… {res}', 'game.dirL':'izquierda', 'game.dirR':'derecha',
-    'game.hit':'¡acertaste! ✅', 'game.miss':'¡fallaste! ❌',
+    't.kushSleeping':'Kush está dormida. Déjala. 💤',
+    't.kushDark':'🌙 Luz apagada. Kush despierta.', 't.kushLight':'☀️ Luz encendida. Kush vuelve a dormir.',
+    't.kushAlreadyNight':'Ya es de noche. Kush está despierta. 🌙',
+    'feed.title':'¿Qué le damos?', cancel:'Cancelar',
+    'food.kibble':'Croquetas', 'food.kibble.sub':'llenan',
+    'food.chicken':'Pollo',    'food.chicken.sub':'¡rico!',
+    'food.bone':'Hueso',       'food.bone.sub':'a roer',
+    'food.sausage':'Salchicha','food.sausage.sub':'¡slurp!',
+    'food.icecream':'Helado',  'food.icecream.sub':'congelante',
+    'food.pizza':'Pizza',      'food.pizza.sub':'¡atrápala!',
+    'game.exit':'Salir', 'game.chip':'🎾 {r}/5 · ✔ {n}',
+    'game.prompt':'¡Toca donde sea para saltar y atrapar la pelota!', 'game.catch':'¡Buena atrapada! 🎉', 'game.missed':'¡Se te escapó! 🥲',
+    'kgame.chip':'🐭 {r}/5 · ✔ {n}', 'kgame.prompt':'Puedes oír o ver… nunca las dos. ¡Encuentra al ratón!',
+    'kgame.got':'¡Te atrapé! 🐭', 'kgame.escaped':'Se escapó…', 'kgame.nothing':'No hay nada ahí…',
+    'kgame.see':'👀 Ver', 'kgame.hear':'👂 Oír',
     'm.egg':'Huevo de nube', 'm.age':'Edad: {a}', 'm.notBorn':'Aún no nace',
     'dev.egg':'Devoción', 'dev.cachorro':'Devoción → Spot', 'dev.spot':'Devoción → Dios Perro', 'dev.dios':'Devoción (toda la manada)',
     note:'Spot es eterno: nunca muere. Si lo descuidas se pone triste o enfermo, pero siempre vuelve. La devoción crece cuando lo cuidas de verdad (no sirve spamear botones).',
@@ -344,14 +377,15 @@ const I18N = {
     'sound.on':'🔊 Sonido encendido', 'sound.off':'🔇 Sonido apagado', reset:'Reiniciar',
     'reset.confirm':'¿Reiniciar todo? Spot volverá a ser un huevo y se pierde la devoción.',
     'say.egg':['Toca el huevo para que nazca Spot 🥚'],
-    'say.hungry':['¡Tengo hambre! 🍗', 'Mi pancita hace XD…'],
-    'say.sad':['Quiero jugar… 🥺', 'Me siento solito'],
+    'say.hungry':['¡Tengo hambre! 🍗', 'Hasta los dioses tienen hambre…'],
+    'say.sad':['Quiero jugar… 🥺', 'Me siento solito', '¿Dónde estará My Happy Thing…?'],
     'say.sleepy':['Tengo sueño… 💤'], 'say.sick':['No me siento bien… 🤒'], 'say.sleep':['Zzz… 💤'],
-    'say.happy':['XD 🐾', 'Ladren por Spot 🐾', '¡Soy feliz! ✨'],
-    'say.ok':['XD 🐾', '¿Jugamos?', 'Aquí, vigilando las nubes ☁️'], 'say.poop':['¡Hay popó! 💩'],
-    'kush.say.sleep':['Zzz… 🐈‍⬛💤'], 'kush.say.awake':['…', 'He estado observando. 👁️', 'Mrrp.'],
-    't.kushNeeds':'Kush no necesita tus cuidados. Solo observa. 🐈‍⬛', 't.kushSleeping':'Kush está dormida. Déjala. 💤',
-    'game.chip':'🎾 {r}/5 · ✔ {n}',
+    'say.happy':['¡Voy a encontrar a My Happy Thing! ✨', 'Ladren por Spot 🐾', '¡Soy feliz! ✨'],
+    'say.ok':['Voy a encontrar a My Happy Thing.', 'No recuerdo qué es. Pero lo voy a encontrar.', '¿Jugamos?', 'Aquí, vigilando las nubes ☁️', '¿Qué era My Happy Thing…?'],
+    'say.poop':['¡Hay popó! 💩'],
+    'kush.say.sleep':['Zzz… 🐈‍⬛💤'], 'kush.say.hear':['Lo escucho todo.'], 'kush.say.see':['Lo veo todo.'],
+    'kush.say.hungry':['Requiero sustento.'], 'kush.say.sad':['Me aburro. Entreténme.'],
+    'kush.say.sleepy':['Pronto descansaré.'], 'kush.say.sick':['No me siento… bien.'], 'kush.say.poop':['La arena. Ahora. 💩'],
     'dog.collie.name':'Border Collie',  'dog.collie.breed':'Border Collie',  'dog.collie.role':'El estratega, la mente.',          'dog.collie.origin':'Escocia',
     'dog.bimba.name':'Bimba',           'dog.bimba.breed':'Corgi',           'dog.bimba.role':'La que trae el caos.',              'dog.bimba.origin':'Gales (orgullosamente latina)',
     'dog.balin.name':'Balin',           'dog.balin.breed':'Pug',             'dog.balin.role':'El mudo.',                         'dog.balin.origin':'China',
@@ -385,11 +419,15 @@ const DEFAULT = {
   lastPetDevo:0, mute:false, last:Date.now(),
   char:'spot',                 // personaje en pantalla: 'spot' | 'kush'
 };
+function newKush(){ return { hunger:70, happy:70, energy:80, poops:0, poopAcc:0, sick:false, sickAcc:0 }; }   // los cuidados de Kush
 let S = load();
 
 function load(){
-  try { const raw = localStorage.getItem(KEY); if (raw) return Object.assign({}, DEFAULT, JSON.parse(raw)); } catch(e){}
-  return Object.assign({}, DEFAULT, { unlocked:[], last:Date.now() });
+  let s = null;
+  try { const raw = localStorage.getItem(KEY); if (raw) s = Object.assign({}, DEFAULT, JSON.parse(raw)); } catch(e){}
+  if (!s) s = Object.assign({}, DEFAULT, { unlocked:[], last:Date.now() });
+  s.k = Object.assign(newKush(), s.k || {});
+  return s;
 }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
 
@@ -403,42 +441,56 @@ const now = () => Date.now();
 const stageOf = () => !S.hatched ? 'egg' : S.devotion < STAGE_AT.spot ? 'cachorro' : S.devotion < STAGE_AT.dios ? 'spot' : 'dios';
 const stageName = st => tr('stage.'+st);
 
-function advance(min, away){
-  if (!S.hatched || min <= 0) return;
-  const f = away ? OFFLINE_FACTOR : 1;
-  const sl = S.sleeping;
+/* ---------- Spot y Kush se cuidan igual: todo opera sobre "la mascota en pantalla" ---------- */
+const isKush = () => S.char === 'kush';
+const pet = () => isKush() ? S.k : S;
+const petName = () => isKush() ? 'Kush' : 'Spot';
+const asleepNow = () => isKush() ? kushAsleep() : S.sleeping;
+// como tr(), pero con {name} y, si existe, la variante con género de Kush (p. ej. "k.t.asleep")
+const trp = (k, v) => {
+  const kk = 'k.' + k;
+  const key = isKush() && (I18N[LANG][kk] || I18N.en[kk]) ? kk : k;
+  return tr(key, Object.assign({ name: petName() }, v));
+};
+const gain = n => { if (!isKush()) addDevotion(n); };          // la devoción es solo de Spot
 
-  let hLoss = RATE.hunger * (sl ? .5 : 1);
-  let pLoss = RATE.happy * (sl ? .3 : 1) * (S.sick ? 2 : 1) + 0.03 * S.poops;
+function advancePet(p, name, min, away, sl){
+  const f = away ? OFFLINE_FACTOR : 1;
+  const hLoss = RATE.hunger * (sl ? .5 : 1);
+  const pLoss = RATE.happy * (sl ? .3 : 1) * (p.sick ? 2 : 1) + 0.03 * p.poops;
 
   const fl = v => away ? Math.min(v, OFFLINE_FLOOR) : 0;   // piso mientras no estabas
-  S.hunger = Math.max(fl(S.hunger), S.hunger - hLoss*min*f);
-  S.happy  = Math.max(fl(S.happy),  S.happy  - pLoss*min*f);
+  p.hunger = Math.max(fl(p.hunger), p.hunger - hLoss*min*f);
+  p.happy  = Math.max(fl(p.happy),  p.happy  - pLoss*min*f);
 
-  if (sl) {
-    S.energy = clamp(S.energy + RATE.energySleep*min*f);
-    if (S.energy >= 99) { S.sleeping = false; S.energy = 100; toast(tr('t.woke')); }
-  } else {
-    S.energy = Math.max(away ? Math.min(S.energy, 15) : 0, S.energy + RATE.energyAwake*min*f);
-    if (S.energy <= 3 && !away) { S.sleeping = true; toast(tr('t.tired')); }
-  }
+  if (sl) p.energy = clamp(p.energy + RATE.energySleep*min*f);
+  else    p.energy = Math.max(away ? Math.min(p.energy, 15) : 0, p.energy + RATE.energyAwake*min*f);
 
   if (!sl) {
-    S.poopAcc += min * (away ? .3 : 1);
-    while (S.poopAcc >= POOP_EVERY_MIN) {
-      S.poopAcc -= POOP_EVERY_MIN;
-      if (S.poops < (away ? 2 : 3)) S.poops++;
+    p.poopAcc += min * (away ? .3 : 1);
+    while (p.poopAcc >= POOP_EVERY_MIN) {
+      p.poopAcc -= POOP_EVERY_MIN;
+      if (p.poops < (away ? 2 : 3)) p.poops++;
     }
   }
 
-  if (!away && !S.sick) {
-    S.sickAcc += min * ((S.poops >= 2 ? 1 : 0) + (S.hunger < 8 ? 1 : 0));
-    if (S.sickAcc >= SICK_AFTER_MIN) { S.sick = true; S.sickAcc = 0; toast(tr('t.sick')); sfx('no'); }
+  if (!away && !p.sick) {                  // se enferma por descuido: popós sin limpiar y/o hambre extrema
+    p.sickAcc += min * ((p.poops >= 2 ? 1 : 0) + (p.hunger < 8 ? 1 : 0));
+    if (p.sickAcc >= SICK_AFTER_MIN) { p.sick = true; p.sickAcc = 0; toast(tr('t.sick', { name })); sfx('no'); }
   }
-  S.ageMin += min;
+}
+function advance(min, away){
+  if (min <= 0) return;
+  if (S.hatched) {
+    advancePet(S, 'Spot', min, away, S.sleeping);
+    if (S.sleeping && S.energy >= 99) { S.sleeping = false; S.energy = 100; toast(tr('t.woke')); }
+    else if (!S.sleeping && S.energy <= 3 && !away) { S.sleeping = true; toast(tr('t.tired')); }
+    S.ageMin += min;
+  }
+  advancePet(S.k, 'Kush', min, away, kushAsleep());      // Kush duerme de día (según el reloj)
 }
 
-let lastMood = null;
+let lastMood = null, lastMoodChar = null;
 function tick(){
   const t = now();
   let raw = (t - S.last) / 60000;
@@ -446,26 +498,28 @@ function tick(){
   if (raw <= 0) return;
   const away = raw > 3;
   raw = Math.min(raw, 24*60);
-  if (away && S.hatched && raw > 10) toast(tr('t.back'));
+  if (away && (S.hatched || isKush()) && raw > 10) toast(tr('t.back', { name: petName() }));
   advance(raw * SPEED, away);
   const m = mood();
+  if (lastMoodChar !== S.char) { lastMoodChar = S.char; lastMood = m; return; }     // al cambiar de personaje no avisamos
   if (m !== lastMood) {
-    if (m === 'hungry' && lastMood !== null) toast(tr('t.hungry'));
-    if (m === 'sad' && lastMood !== null) toast(tr('t.wantsPlay'));
+    if (m === 'hungry' && lastMood !== null) toast(tr('t.hungry', { name: petName() }));
+    if (m === 'sad' && lastMood !== null) toast(tr('t.wantsPlay', { name: petName() }));
     lastMood = m;
   }
 }
 
-function mood(){
-  if (!S.hatched) return 'egg';
-  if (S.sleeping) return 'sleep';
-  if (S.sick) return 'sick';
-  if (S.hunger < 25) return 'hungry';
-  if (S.happy < 25) return 'sad';
-  if (S.energy < 20) return 'sleepy';
-  if (S.happy > 75 && S.hunger > 50) return 'happy';
+function moodOf(p, sl, hatched){
+  if (!hatched) return 'egg';
+  if (sl) return 'sleep';
+  if (p.sick) return 'sick';
+  if (p.hunger < 25) return 'hungry';
+  if (p.happy < 25) return 'sad';
+  if (p.energy < 20) return 'sleepy';
+  if (p.happy > 75 && p.hunger > 50) return 'happy';
   return 'ok';
 }
+const mood = () => isKush() ? moodOf(S.k, kushAsleep(), true) : moodOf(S, S.sleeping, S.hatched);
 
 function addDevotion(n){
   const before = stageOf();
@@ -481,79 +535,145 @@ function addDevotion(n){
 
 /* ---------- acciones ---------- */
 const guard = () => {
-  if (S.char === 'kush') { toast(tr('t.kushNeeds')); return false; }      // por ahora Kush solo se deja ver
-  if (!S.hatched) { toast(tr('t.tapEgg')); return false; }
+  if (!isKush() && !S.hatched) { toast(tr('t.tapEgg')); return false; }
   return true;
 };
 
+/* 6 comidas, cada una con SU animación (ver drawFood). h = hambre, hp = alegría, poop = qué tan pronto sigue el popó */
+const FOODS = [
+  { id:'kibble',   icon:'🥣', h:25, hp:2,  poop:25, ms:2500 },
+  { id:'chicken',  icon:'🍗', h:40, hp:10, poop:45, ms:3300 },
+  { id:'bone',     icon:'🦴', h:12, hp:18, poop:10, ms:3500 },
+  { id:'sausage',  icon:'🌭', h:30, hp:8,  poop:30, ms:3100 },
+  { id:'icecream', icon:'🍦', h:8,  hp:28, poop:15, ms:3700, energy:8 },
+  { id:'pizza',    icon:'🍕', h:45, hp:12, poop:50, ms:3100 },
+];
 function openFeed(){
   if (!guard()) return;
-  if (S.sleeping) return toast(tr('t.asleep'));
-  if (S.hunger >= 92) { startAnim('no', 900); sfx('no'); return toast(tr('t.notHungry')); }
+  const p = pet();
+  if (asleepNow()) return toast(trp('t.asleep'));
+  if (p.hunger >= 92) { startAnim('no', 900); sfx('no'); return toast(trp('t.notHungry')); }
   showPane(`<h3>${tr('feed.title')}</h3>
-    <div class="row">
-      <button data-feed="croqueta">${tr('feed.kibble')}<small>${tr('feed.kibbleSub')}</small></button>
-      <button data-feed="pollo">${tr('feed.chicken')}<small>${tr('feed.chickenSub')}</small></button>
+    <div class="row foods">${FOODS.map(f =>
+      `<button data-feed="${f.id}"><i>${f.icon}</i><b>${tr('food.'+f.id)}</b><small>${tr('food.'+f.id+'.sub')}</small></button>`).join('')}
     </div><button class="ghost" data-close>${tr('cancel')}</button>`);
 }
-function feed(kind){
+function feed(id){
   hidePane();
-  const F = { croqueta:{ h:25, hp:2,  poop:25, icon:'kibble' }, pollo:{ h:40, hp:10, poop:45, icon:'drum' } }[kind];
-  const before = S.hunger;
-  S.hunger = clamp(S.hunger + F.h); S.happy = clamp(S.happy + F.hp); S.poopAcc += F.poop;
-  startAnim('eat', 2400, { icon:F.icon });
+  const F = FOODS.find(f => f.id === id), p = pet();
+  if (!F) return;
+  const before = p.hunger;
+  p.hunger = clamp(p.hunger + F.h); p.happy = clamp(p.happy + F.hp); p.poopAcc += F.poop;
+  if (F.energy) p.energy = clamp(p.energy + F.energy);        // el helado da un empujón de azúcar
+  startAnim('eat', F.ms, { food:id });
   sfx('eat');
-  if (before < 80) addDevotion(3);
+  if (before < 80) gain(3);
   save();
 }
 
-/* Minijuego: los botones ⬅️ ➡️ están a los lados de la pantalla; al elegir, Spot lanza la
-   pelota y se VE volar hacia el lado que de verdad salió (ver drawBall / ballAnim). */
-let game = null, ballAnim = null;
-const BALL_FLY_MS = 900;
+/* ---------- minijuegos ----------
+   Spot ATRAPA la pelota (los perros no la lanzan): te la tiran desde un lado y tú tocas la pantalla en el
+   momento justo para que salte. Kush CAZA ratones: "oye todo, ve todo, pero no al mismo tiempo" —
+   solo percibe lo que coincide con su modo actual (👀 ver / 👂 oír). */
+let game = null;
+const CATCH_T = [1300, 1200, 1100, 1000, 900];     // ms que tarda la pelota en llegar a la boca de Spot
+const JUMP_MS = 340, JUMP_LEAD = 170;              // el salto dura 340 ms y la boca llega arriba a los 170
+const HS_X = [12, 32, 52];                         // columnas donde aparece el ratón de Kush
 function openPlay(){
   if (!guard()) return;
-  if (S.sleeping) return toast(tr('t.asleep'));
-  if (S.sick) return toast(tr('t.cantPlaySick'));
-  if (S.energy < 20) return toast(tr('t.tooTired'));
+  const p = pet();
+  if (asleepNow()) return toast(trp('t.asleep'));
+  if (p.sick) return toast(trp('t.cantPlaySick'));
+  if (p.energy < 20) return toast(trp('t.tooTired'));
   hidePane();
-  game = { round:0, wins:0, lock:false, say:tr('game.prompt') };
-  ballAnim = null; hudAt = 0; renderGame();
+  if (isKush()) startKushGame(); else startSpotGame();
 }
 function renderGame(){
-  if (!game) { $('#gameUi').hidden = true; return; }
-  $('#gameUi').hidden = false;
-  $('#gChip').textContent = tr('game.chip', { r: Math.min(game.round + (game.lock ? 0 : 1), 5), n: game.wins });
-  document.querySelectorAll('#gameUi .gbtn').forEach(b => { b.disabled = game.lock; });
-}
-function pick(side){
-  if (!game || game.lock) return;
-  const g = game, dir = Math.random() < .5 ? 'L' : 'R', hit = dir === side;
-  g.lock = true; g.round++; if (hit) g.wins++;
-  ballAnim = { t0: now(), dir, hit };
-  sfx('tap'); renderGame();
-  setTimeout(() => {                       // la pelota cae: ahora sí decimos qué pasó
-    if (game !== g) return;
-    g.say = tr('game.went', { dir: tr(dir==='L' ? 'game.dirL' : 'game.dirR'), res: tr(hit ? 'game.hit' : 'game.miss') });
-    sfx(hit ? 'happy' : 'no'); hudAt = 0; renderGame();
-  }, BALL_FLY_MS - 100);
-  setTimeout(() => {
-    if (game !== g) return;
-    if (g.round >= 5) return finishGame();
-    g.lock = false; ballAnim = null; g.say = tr('game.prompt'); hudAt = 0; renderGame();
-  }, BALL_FLY_MS + 1100);
+  const ui = $('#gameUi');
+  if (!game) { ui.hidden = true; return; }
+  ui.hidden = false; ui.classList.toggle('kg', game.kind === 'kush'); ui.classList.toggle('sg', game.kind === 'spot');
+  $('#gChip').textContent = tr(game.kind === 'kush' ? 'kgame.chip' : 'game.chip', { r: Math.min(Math.max(game.round, 1), 5), n: game.wins });
+  if (game.kind === 'kush') $('#gMode').textContent = tr(game.mode === 'see' ? 'kgame.see' : 'kgame.hear');
 }
 function finishGame(){
-  const w = game.wins; hidePane();
-  startAnim('play', 2600);
-  S.energy = clamp(S.energy - 15); S.hunger = clamp(S.hunger - 8);
-  if (w >= 3) { S.happy = clamp(S.happy + 30); addDevotion(5); toast(tr('t.won', { w })); sfx('fanfare'); }
-  else        { S.happy = clamp(S.happy + 10); addDevotion(1); toast(tr('t.lost', { w })); }
+  const g = game, w = g.wins, K = g.kind === 'kush', p = pet();
+  hidePane();
+  startAnim(K ? 'kushwin' : 'play', 2600);
+  p.energy = clamp(p.energy - (K ? 10 : 15)); p.hunger = clamp(p.hunger - 8);
+  if (w >= 3) { p.happy = clamp(p.happy + 30); gain(5); toast(tr('t.won', { w, name: petName() })); sfx('fanfare'); }
+  else        { p.happy = clamp(p.happy + 10); gain(1); toast(tr('t.lost', { w })); }
   save();
+}
+
+/* -- Spot: atrapar la pelota -- */
+function startSpotGame(){
+  const g = game = { kind:'spot', round:0, wins:0, phase:'idle', say:tr('game.prompt') };
+  hudAt = 0; renderGame(); setTimeout(() => nextThrow(g), 900);
+}
+function nextThrow(g){
+  if (game !== g) return;
+  if (g.round >= 5) return finishGame();
+  g.round++; g.side = Math.random() < .5 ? 'L' : 'R'; g.T = CATCH_T[g.round-1];
+  g.t0 = now(); g.tapAt = null; g.result = null; g.phase = 'fly'; g.say = tr('game.prompt');
+  hudAt = 0; renderGame();
+  setTimeout(() => resolveThrow(g), g.T + 420);
+}
+function gameTap(){
+  const g = game;
+  if (!g || g.kind !== 'spot' || g.phase !== 'fly' || g.tapAt != null) return;
+  g.tapAt = now() - g.t0; sfx('tap');                                    // solo cuenta el primer toque de cada pelota
+}
+function resolveThrow(g){
+  if (game !== g) return;
+  const ok = g.tapAt != null && Math.abs((g.tapAt + JUMP_LEAD) - g.T) <= 150;
+  g.result = ok ? 'catch' : 'miss'; g.phase = 'result'; g.resAt = now(); if (ok) g.wins++;
+  g.say = tr(ok ? 'game.catch' : 'game.missed'); sfx(ok ? 'happy' : 'no'); hudAt = 0; renderGame();
+  setTimeout(() => nextThrow(g), 1100);
+}
+
+/* -- Kush: cazar ratones oyendo o viendo -- */
+function startKushGame(){
+  const g = game = { kind:'kush', round:0, wins:0, mode:'see', prey:null, cool:0, say:tr('kgame.prompt') };
+  hudAt = 0; renderGame(); setTimeout(() => nextPrey(g), 900);
+}
+function nextPrey(g){
+  if (game !== g) return;
+  if (g.round >= 5) return finishGame();
+  g.round++;
+  g.prey = { zone:Math.floor(Math.random()*3), type:Math.random() < .5 ? 'see' : 'hear', t0:now(),
+             dur:[2800,2600,2400,2200,2000][g.round-1], done:false, caught:false };
+  g.say = tr('kgame.prompt'); hudAt = 0; renderGame();
+  g.preyTimer = setTimeout(() => endPrey(g, false), g.prey.dur);
+}
+function endPrey(g, caught){
+  if (game !== g || !g.prey || g.prey.done) return;
+  const pr = g.prey; pr.done = true; pr.caught = caught; pr.endAt = now(); clearTimeout(g.preyTimer);
+  if (caught) g.wins++;
+  g.say = tr(caught ? 'kgame.got' : 'kgame.escaped'); sfx(caught ? 'happy' : 'no'); hudAt = 0; renderGame();
+  setTimeout(() => { if (game === g) { g.prey = null; nextPrey(g); } }, 1000);
+}
+function setMode(m){
+  const g = game; if (!g || g.kind !== 'kush' || g.mode === m) return;
+  g.mode = m; sfx('tap'); renderGame();
+}
+function pounce(z){
+  const g = game;
+  if (!g || g.kind !== 'kush' || !g.prey || g.prey.done || now() < g.cool) return;
+  g.cool = now() + 650; g.pounce = { zone:z, t0:now() }; sfx('tap');
+  if (z === g.prey.zone && g.mode === g.prey.type) setTimeout(() => endPrey(g, true), 280);      // solo se caza lo que percibes
+  else {
+    g.say = tr('kgame.nothing'); hudAt = 0;
+    setTimeout(() => { if (game === g && g.prey && !g.prey.done) { g.say = tr('kgame.prompt'); hudAt = 0; } }, 900);
+  }
 }
 
 function toggleLight(){
   if (!guard()) return;
+  if (isKush()) {                                     // Kush: apagar la luz la despierta (es nocturna)
+    if (clockNight()) return toast(tr('t.kushAlreadyNight'));
+    kushDark = !kushDark; hidePane(); hudAt = 0; toast(tr(kushDark ? 't.kushDark' : 't.kushLight'));
+    return;
+  }
   if (S.sleeping) { S.sleeping = false; toast(tr('t.woke')); if (S.energy < 40) S.happy = clamp(S.happy - 5); }
   else if (S.energy >= 85) { startAnim('no', 900); return toast(tr('t.notSleepy')); }
   else { S.sleeping = true; toast(tr('t.goodnight')); }
@@ -561,20 +681,23 @@ function toggleLight(){
 }
 function clean(){
   if (!guard()) return;
-  if (S.sleeping) return toast(tr('t.shh'));
-  if (!S.poops) return toast(tr('t.allClean'));
-  S.poops = 0; S.sickAcc = Math.max(0, S.sickAcc - 40); S.happy = clamp(S.happy + 5);
-  startAnim('clean', 1800); sfx('happy'); addDevotion(2); save();
+  const p = pet();
+  if (asleepNow()) return toast(trp('t.shh'));
+  if (!p.poops) return toast(tr('t.allClean'));
+  p.poops = 0; p.sickAcc = Math.max(0, p.sickAcc - 40); p.happy = clamp(p.happy + 5);
+  startAnim('clean', 1800); sfx('happy'); gain(2); save();
 }
 function medicine(){
   if (!guard()) return;
-  if (S.sleeping) return toast(tr('t.shh'));
-  if (!S.sick) return toast(tr('t.notSick'));
-  S.sick = false; S.sickAcc = 0; S.happy = clamp(S.happy - 5);
-  startAnim('med', 2000); sfx('happy'); addDevotion(5); toast(tr('t.cured')); save();
+  const p = pet();
+  if (asleepNow()) return toast(trp('t.shh'));
+  if (!p.sick) return toast(trp('t.notSick'));
+  p.sick = false; p.sickAcc = 0; p.happy = clamp(p.happy - 5);
+  startAnim('med', 2000); sfx('happy'); gain(5); toast(trp('t.cured')); save();
 }
 function petSpot(){
-  if (S.char === 'kush') return petKush();
+  if (game) return gameTap();
+  if (isKush()) return petKush();
   if (!S.hatched) {
     S.hatchTaps++; startAnim('wobble', 500); sfx('tap');
     if (S.hatchTaps >= 6) {
@@ -593,13 +716,14 @@ function petSpot(){
 /* ---------- UI: panel, toast, modal ---------- */
 const paneEl = $('#pane');
 function showPane(html){ paneEl.innerHTML = html; paneEl.hidden = false; }
-function hidePane(){ paneEl.hidden = true; paneEl.innerHTML = ''; game = null; ballAnim = null; $('#gameUi').hidden = true; hudAt = 0; }
+function hidePane(){ paneEl.hidden = true; paneEl.innerHTML = ''; game = null; $('#gameUi').hidden = true; hudAt = 0; }
 paneEl.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || b.disabled) return;
   if (b.dataset.feed) feed(b.dataset.feed);
   else if ('close' in b.dataset) hidePane();
 });
-document.querySelectorAll('#gameUi .gbtn').forEach(b => { b.onclick = () => pick(b.dataset.g); });
+document.querySelectorAll('#gZones button').forEach(b => { b.onclick = () => pounce(+b.dataset.z); });   // Kush: tres columnas
+$('#gMode').onclick = () => { if (game && game.kind === 'kush') setMode(game.mode === 'see' ? 'hear' : 'see'); };
 $('#gQuit').onclick = hidePane;
 
 const toastEl = $('#toast'); const toastQ = []; let toastBusy = false;
@@ -641,7 +765,7 @@ modal.addEventListener('click', e => { if (e.target === modal) modal.hidden = tr
 $('#mSound').onclick = () => { S.mute = !S.mute; save(); $('#mSound').textContent = tr(S.mute ? 'sound.off' : 'sound.on'); };
 $('#mReset').onclick = () => {
   if (!confirm(tr('reset.confirm'))) return;
-  S = Object.assign({}, DEFAULT, { unlocked:[], last:now(), mute:S.mute }); save(); modal.hidden = true; hidePane();
+  S = Object.assign({}, DEFAULT, { unlocked:[], last:now(), mute:S.mute, k:newKush() }); save(); modal.hidden = true; hidePane(); syncChars();
   toast(tr('t.newEgg'));
 };
 
@@ -666,11 +790,14 @@ document.querySelectorAll('[data-lang]').forEach(b => { b.onclick = () => setLan
 
 /* ---------- Kush (la gatita negra) ----------
    Duerme de día y despierta de noche según el RELOJ del aparato (?hour=14 fuerza la hora, para probar).
-   Su entrada es siempre la misma: noche cerrada → dos ojos → rayo → la noche se despeja y ahí está. */
+   Apagar la 💡 la despierta a propósito (es nocturna). Su entrada es siempre la misma: noche cerrada →
+   dos ojos → rayo → la noche se despeja y ahí está. */
 const KUSH_NIGHT = [19, 6];                                   // de las 19:00 a las 6:00 es de noche
 const FORCE_HOUR = params.has('hour') ? +params.get('hour') : null;
 const hourNow = () => FORCE_HOUR ?? new Date().getHours();
-const isNight = () => hourNow() >= KUSH_NIGHT[0] || hourNow() < KUSH_NIGHT[1];
+const clockNight = () => hourNow() >= KUSH_NIGHT[0] || hourNow() < KUSH_NIGHT[1];
+let kushDark = false;                                         // "luz apagada": noche a la fuerza
+const isNight = () => clockNight() || kushDark;
 const kushAsleep = () => !isNight();
 const INTRO_MS = 4300;
 let kushIntro = null;
@@ -691,9 +818,10 @@ document.querySelectorAll('[data-char]').forEach(b => { b.onclick = () => setCha
 function petKush(){
   if (kushIntro) { kushIntro = null; return; }                 // tocar la pantalla salta la intro
   if (kushAsleep()) { startAnim('kushpeek', 1300); toast(tr('t.kushSleeping')); return; }
-  startAnim('kushpet', 1600); spawnHearts(2); sfx('mew');
+  startAnim('kushpet', 1600); spawnHearts(2); sfx('mew'); S.k.happy = clamp(S.k.happy + 2); save();
 }
 
+/* ---------- botones y teclado ---------- */
 $('#bFeed').onclick = openFeed;
 $('#bPlay').onclick = openPlay;
 $('#bLight').onclick = toggleLight;
@@ -703,12 +831,13 @@ $('#bInfo').onclick = openInfo;
 $('#cv').addEventListener('click', petSpot);
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { modal.hidden = true; hidePane(); }
+  if (e.code === 'Space' && game && game.kind === 'spot') { e.preventDefault(); gameTap(); }     // saltar con la barra espaciadora
 });
 
 /* ---------- sonido (bips tipo LCD) ---------- */
 let ac = null;
 const SFX = {
-  mew:[[880,.07,'sine'],[1175,.09,'sine'],[760,.14,'sine']],
+  mew:[[880,.07,'sine'],[1175,.09,'sine'],[760,.14,'sine']], squeak:[[1500,.04,'sine'],[1900,.05,'sine']],
   tap:[[660,.07]], bark:[[420,.09,'sawtooth'],[300,.12,'sawtooth']], eat:[[500,.06],[620,.06],[500,.06],[620,.06]],
   happy:[[523,.08],[659,.08],[784,.12]], no:[[200,.16],[160,.2]], fanfare:[[523,.1],[659,.1],[784,.1],[1047,.28]],
 };
@@ -792,7 +921,7 @@ const PAL = {
 };
 const STARS = [[6,6],[15,14],[24,5],[40,9],[52,3],[59,17],[48,23],[9,25],[33,16],[20,27]];
 
-function drawScene(pal,t,fr,night,noPoops){
+function drawScene(pal,t,fr,night,poops){
   T = SCENE;
   const bands=[0,15,30,44,64];
   for (let y=0;y<W;y++){
@@ -819,7 +948,7 @@ function drawScene(pal,t,fr,night,noPoops){
   }
   // popós sobre la nube
   const spots=[[15,52],[46,54],[22,55]];
-  for (let i=0;i<(noPoops ? 0 : Math.min(S.poops,3));i++) bmp(['...x...','..xhx..','.xxxhx.','xxxxxxx'],spots[i][0],spots[i][1],{x:C.poop,h:C.poopHi});
+  for (let i=0;i<Math.min(poops|0,3);i++) bmp(['...x...','..xhx..','.xxxhx.','xxxxxxx'],spots[i][0],spots[i][1],{x:C.poop,h:C.poopHi});
 }
 
 function drawEgg(p,pal){
@@ -934,6 +1063,9 @@ function drawDog(p,pal,st,fr,t){
     else if (k==='half'){ R(cx-2.5,30.5,5,1.6,C.ink,1); }
     else if (k==='happy'){ R(cx-1,29.5,3,1,C.ink,1); R(cx-2.5,30.5,1.2,1.2,C.ink,1); R(cx+1.8,30.5,1.2,1.2,C.ink,1); }
     else if (k==='x'){ for (let i=-2;i<=2;i++){ R(cx+i,30+i,1,1,C.ink,1); R(cx+i,30-i,1,1,C.ink,1); } }
+    else if (k==='xd'){                                    // XD: el ojo izquierdo es ">" y el derecho "<"
+      for (let i=-3;i<=3;i++){ const w=Math.abs(i); R(left ? cx-3+(3-w) : cx-1+w, 30+i, 2, 1, C.ink, 1); }
+    }
   };
   const lk = p.look || 0;                                  // mirada: 1 casilla hacia donde va la pelota
   eye(26+lk,p.eyes,true); eye(38+lk,p.eyes,false);
@@ -944,6 +1076,7 @@ function drawDog(p,pal,st,fr,t){
     else if (m==='sleep'){ R(30,37,5,1,C.ink,1); }
     else if (m==='open'){ E(32.5,38,3.8,2.8,C.mouth,1); E(32.5,39.2,2.4,1.4,C.tongue,1); if (p.tongue) E(33.5,41,2.2,2,C.tongue,1); }
     else if (m==='chew'){ E(32.5,37.8,2.6,1.6,C.mouth,1); E(32.5,38.6,1.6,.8,C.tongue,1); }
+    else if (m==='xd'){ E(32.5,40,5.6,3.3,C.mouth,1); R(28,37,9,1,C.white,1); E(33,42,3.4,1.6,C.tongue,1); }   // carcajada: bocota con dientes y lengua
   };
   mouth(p.mouth);
   if (p.blush){ E(22.5,34.5,2.4,1.2,C.blush,1); E(42.5,34.5,2.4,1.2,C.blush,1); }
@@ -962,9 +1095,47 @@ function startAnim(type,dur,extra){ A = Object.assign({ type, t0:now(), dur }, e
 function curAnim(){ if (A && now() > A.t0 + A.dur) A = null; return A; }
 function spawnHearts(n){ for (let i=0;i<n;i++) parts.push({ t0:now()+i*160, x:24+Math.random()*16, y:16 }); }
 
+/* Postura al comer (la usan Spot y Kush). e = ms desde que empezó la animación. */
+function eatPose(a, e, fr){
+  const q = { eyes:'happy', mouth:'chew', tongue:false, look:0, jump:0, shake:0 };
+  const chew = (fr%2) ? 'chew' : 'smile';
+  switch (a.food) {
+    case 'kibble':                                   // las croquetas caen a la boca
+      if (e < 700) { q.eyes = 'open'; q.mouth = 'open'; } else q.mouth = chew;
+      break;
+    case 'chicken': {                                // muerde el muslo: abre, cierra, abre…
+      if (e < 600) { q.eyes = 'open'; q.mouth = 'open'; }
+      else { const ph = (e - 600) % 640; q.mouth = ph < 260 ? 'open' : 'chew'; q.eyes = ph < 260 ? 'open' : 'happy'; }
+      break;
+    }
+    case 'bone':                                     // lo ROE: mueve la cabeza de lado a lado
+      if (e < 450) { q.eyes = 'open'; q.mouth = 'open'; }
+      else { q.look = Math.floor(e / 380) % 2 ? 1 : -1; q.mouth = chew; }
+      break;
+    case 'sausage':                                  // slurp de espagueti
+      if (e < 1000) { q.eyes = 'open'; q.mouth = 'open'; q.tongue = true; }
+      else if (e < 2500) { q.eyes = 'open'; q.mouth = (fr%2) ? 'open' : 'chew'; }
+      else q.mouth = chew;
+      break;
+    case 'icecream':                                 // lame, lame… ¡y le da el congelamiento!
+      if (e < 500) { q.eyes = 'open'; q.mouth = 'smile'; q.look = 1; }
+      else if (e < 2700) { q.look = 1; q.mouth = 'smile'; q.lick = true; }
+      else { q.eyes = 'xd'; q.mouth = 'open'; q.shake = (fr%2) ? 1 : -1; }
+      break;
+    case 'pizza':                                    // la atrapa al vuelo y ¡chomp!
+      if (e < 950) {
+        q.eyes = 'open'; q.mouth = 'open'; q.tongue = true; q.look = 1;
+        if (e > 650) q.jump = Math.sin(Math.PI * (e - 650) / 300) * 6;
+      } else if (e < 1200) { q.eyes = 'happy'; q.mouth = 'smile'; }
+      else { q.eyes = 'xd'; q.mouth = chew; }
+      break;
+  }
+  return q;
+}
+
 function pose(fr,t){
   const m = mood(), a = curAnim();
-  const p = { eyes:'open', mouth:'smile', tongue:false, earDrop:0, tail:0, blush:false, shake:0, jump:0, headBob:(fr%4<2)?0:1, wobble:0, flare:1 };
+  const p = { eyes:'open', mouth:'smile', tongue:false, earDrop:0, tail:0, blush:false, shake:0, jump:0, headBob:(fr%4<2)?0:1, wobble:0, flare:1, look:0 };
   p.flare = stageOf()==='dios' ? 1.25 : 1;      // la forma divina arde más
   const wag = sp => [0,1,2,1][(fr*sp)%4];
   switch (m) {
@@ -976,62 +1147,159 @@ function pose(fr,t){
     case 'sick':   p.eyes='x'; p.mouth='frown'; p.earDrop=3; p.shake=(fr%2)?1:0; p.flare*=.45; break;
     case 'sleep':  p.eyes='closed'; p.mouth='sleep'; p.earDrop=1; p.headBob=(fr%8<4)?0:1; p.flare*=.4; break;
   }
+  // ¡Spot es el dios del XD! Cada tanto se desternilla: ojos >< y bocota (feliz: ~la mitad del tiempo; normal: de vez en cuando)
+  const xdBurst = (m==='happy' && (t % 8) < 4.2) || (m==='ok' && (t % 12) < 2.6);
+  if (xdBurst) { p.eyes='xd'; p.mouth='xd'; p.blush=true; p.shake=(fr%2)?1:-1; p.flare*=1.3; p.tail=wag(2); p.earDrop=0; }
   if (p.eyes==='open' && fr%26===0) p.eyes='closed';
-  if (game) {                                  // minijuego: Spot sigue la pelota con la mirada
-    p.flare = Math.max(p.flare, 1.4); p.tail = wag(2); p.mouth = 'open'; p.earDrop = 0;
-    if (ballAnim) {
-      p.look = ballAnim.dir === 'L' ? -1 : 1; p.eyes = 'open';
-      if (now() - ballAnim.t0 > BALL_FLY_MS) { p.eyes = ballAnim.hit ? 'happy' : 'sad'; p.look = 0; p.tongue = ballAnim.hit; if (!ballAnim.hit) p.mouth = 'frown'; }
-    }
+
+  const g = (game && game.kind === 'spot') ? game : null;
+  if (g) {                                       // minijuego: Spot espera la pelota, salta y la atrapa
+    p.flare = Math.max(p.flare, 1.4); p.tail = wag(2); p.earDrop = 0; p.shake = 0;
+    if (g.phase === 'fly') {
+      p.eyes = 'open'; p.mouth = 'open'; p.look = g.side === 'L' ? -1 : 1;
+      if (g.tapAt != null) { const jt = (now() - g.t0) - g.tapAt; if (jt >= 0 && jt < JUMP_MS) p.jump = Math.sin(Math.PI * jt / JUMP_MS) * 7; }
+    } else if (g.phase === 'result') {
+      if (g.result === 'catch') { p.eyes = 'xd'; p.mouth = 'xd'; p.shake = (fr%2) ? 1 : -1; p.blush = true; }
+      else { p.eyes = 'sad'; p.mouth = 'frown'; p.earDrop = 2; }
+    } else { p.eyes = 'open'; p.mouth = 'smile'; }
   }
   if (a) {
     const e = now() - a.t0;
     switch (a.type) {
-      case 'pet':   p.eyes='happy'; p.mouth='open'; p.tongue=true; p.blush=true; p.tail=wag(2); p.earDrop=0; p.flare=Math.max(p.flare,1.6); break;
-      case 'play':  p.eyes='happy'; p.mouth='open'; p.tongue=(fr%2===0); p.blush=true; p.tail=wag(2); p.earDrop=0; p.jump=Math.abs(Math.sin(e/110))*5; p.flare=Math.max(p.flare,1.6); break;
-      case 'eat':   p.earDrop=0; p.tail=wag(2); p.eyes=e<700?'open':'happy'; p.mouth=e<700?'open':(fr%2?'chew':'smile'); p.blush=e>700; break;
+      case 'pet':   p.eyes='xd'; p.mouth='xd'; p.blush=true; p.shake=(fr%2)?1:-1; p.tail=wag(2); p.earDrop=0; p.flare=Math.max(p.flare,1.6); break;
+      case 'play':  p.eyes='xd'; p.mouth='xd'; p.blush=true; p.tail=wag(2); p.earDrop=0; p.jump=Math.abs(Math.sin(e/110))*5; p.flare=Math.max(p.flare,1.6); break;
+      case 'eat':   { const q = eatPose(a,e,fr); Object.assign(p, q); p.earDrop=0; p.tail=wag(2); p.blush = q.eyes!=='open'; if (q.eyes==='xd') p.flare*=1.3; break; }
       case 'clean': p.eyes='happy'; p.mouth='smile'; p.blush=true; p.earDrop=0; p.tail=wag(2); break;
       case 'med':   p.eyes='closed'; p.mouth='smile'; p.earDrop=0; break;
       case 'no':    p.shake=(Math.floor(e/90)%2)?1:-1; p.mouth='frown'; break;
-      case 'evolve':p.eyes='happy'; p.mouth='open'; p.tongue=true; p.tail=wag(2); p.earDrop=0; p.jump=Math.abs(Math.sin(e/160))*4; break;
-      case 'hatch': p.eyes='happy'; p.mouth='open'; p.tongue=true; p.tail=wag(2); p.earDrop=0; break;
+      case 'evolve':p.eyes='xd'; p.mouth='xd'; p.tail=wag(2); p.earDrop=0; p.jump=Math.abs(Math.sin(e/160))*4; break;
+      case 'hatch': p.eyes='xd'; p.mouth='xd'; p.tail=wag(2); p.earDrop=0; break;
       case 'wobble':p.wobble=(fr%2)?1:-1; break;
     }
   }
   return p;
 }
 
+/* ---------- comida: cada una con su propia animación ---------- */
+const F = {
+  sausage:col('#d4573a'), sausageDk:col('#a83b27'), sausageHi:col('#f08a6a'),
+  cone:col('#e0a458'), coneDk:col('#c8863b'), scoop:col('#ffb3c7'), cherry:col('#d6283f'),
+  cheese:col('#ffd45a'), crust:col('#d9953a'), pep:col('#d6453d'), ice:col('#9fd8ff'),
+  bone:col('#f6ecd0'), boneSh:col('#cdbd92'), boneLine:col('#8d7a4a'),
+};
+function drumstick(x,y,bite){
+  const r = 1 - bite*.8;
+  thickLine(x+1,y+2,x+3,y+7,C.boneDk,2); ell(x+3,y+8,1.8,1.6,C.bone); ell(x+1,y+8,1.4,1.4,C.bone);
+  if (r > .08) { ell(x,y,3.6*r+.3,3.1*r+.2,C.meat); put(x-1,y-1,col('#e6a35c')); }
+}
+function pizzaSlice(x,y){
+  poly([[x-5,y-3],[x+5,y-3],[x,y+7]],F.cheese);
+  rect(x-5,y-4,10,2,F.crust);
+  put(x-2,y,F.pep); put(x-1,y,F.pep); put(x+2,y+1,F.pep); put(x+1,y+1,F.pep); put(x,y+4,F.pep);
+}
+function drawFood(a, e, fr, mx, my){
+  T = LAYER;
+  switch (a.food) {
+    case 'kibble': {                                  // lluvia de croquetas
+      if (e < 700) {
+        const k = e / 700, x = Math.round(mx + 13 - 13*k), y = Math.round(my - 28 + 26*k);
+        rect(x,y,2,2,C.kibble); rect(x+3,y+2,2,2,C.kibble); rect(x-2,y+3,2,2,C.kibble);
+      }
+      break;
+    }
+    case 'chicken': {                                 // muslo que se acerca y se va acabando a mordidas
+      const total = 2500;
+      let x, y, bite = 0;
+      if (e < 600) { const k = e / 600; x = mx + 13 - 12*k; y = my - 24 + 22*k; }
+      else { x = mx + 1; y = my - 2; bite = Math.min(1, (e - 600) / 1900); }
+      if (e < total + 400) drumstick(Math.round(x), Math.round(y + Math.max(0,(e - total)/400) * 16), bite);   // al final cae el huesito
+      break;
+    }
+    case 'bone': {                                    // el hueso cae entre las patitas y se lo pone a roer
+      const k = Math.min(1, e / 450), y = Math.round(-4 + (my + 8) * k), sx = e > 450 ? (Math.floor(e/90)%2 ? 1 : 0) : 0;
+      if (e < 3200) {
+        const bx = mx - 5 + sx, parts = [[bx,y,2,2],[bx+7,y,2,2],[bx,y+4,2,2],[bx+7,y+4,2,2],[bx+1,y+1,7,4]];   // 4 puntas + el cuerpo
+        for (const [x,yy,w,h] of parts) rect(x-1,yy-1,w+2,h+2,F.boneLine);                                     // contorno (si no, se pierde en el pelaje)
+        for (const [x,yy,w,h] of parts) rect(x,yy,w,h,F.bone);
+        rect(bx+1,y+4,7,1,F.boneSh);
+        if (e > 450 && fr%2) { put(bx-2,y-2,C.white); put(bx+10,y+1,C.white); put(bx+4,y-3,C.goldHi); }   // astillitas
+      }
+      break;
+    }
+    case 'sausage': {                                 // baja del cielo y se la sorbe como espagueti
+      // entra por la derecha, por debajo de los ojos (no le tapa la cara), y se la va sorbiendo como espagueti
+      const S0 = [mx + 28, my - 6], M = [mx + 1, my - 1];
+      const P = u => [S0[0] + (M[0]-S0[0])*u, S0[1] + (M[1]-S0[1])*u];
+      const k1 = Math.min(1, e / 900), k2 = e < 900 ? 0 : Math.min(1, (e - 900) / 1500);
+      const uBot = k1, uTop = k2 > 0 ? .45 + .55*k2 : Math.max(0, k1 - .55);
+      if (k2 < 1 && uTop < uBot - .02) {
+        const wob = Math.sin(e/80) * (.6 + k2), [x0,y0] = P(uTop), [x1,y1] = P(uBot);
+        thickLine(x0 + wob, y0, x1, y1, F.sausage, 3);
+        thickLine(x0 + wob - 1, y0 - 1, x1 - 1, y1 - 1, F.sausageHi, 1);
+        for (let u = uTop + .06; u < uBot; u += .13) { const [gx,gy] = P(u); put(gx + 1, gy + 1, F.sausageDk); put(gx - 1, gy + 1, F.sausageDk); }   // los gajos
+      }
+      break;
+    }
+    case 'icecream': {                                // cono a un lado; lame; al final, congelamiento cerebral
+      const rise = Math.min(1, e / 500), cx = mx + 12, cy = Math.round(my - 6 + (1 - rise) * 22);
+      const lickP = Math.max(0, Math.min(1, (e - 500) / 2200)), r = 4.4 * (1 - .7 * lickP);
+      if (e < 3500) {
+        poly([[cx-3.5,cy+3],[cx+3.5,cy+3],[cx,cy+13]], F.cone);
+        put(cx-1,cy+6,F.coneDk); put(cx+1,cy+6,F.coneDk); put(cx,cy+9,F.coneDk); put(cx,cy+4,F.coneDk);
+        ell(cx, cy, r, r*.85, F.scoop);
+        if (r > 1.5) { put(cx-1,cy-1,C.white); put(cx,cy-Math.round(r)-1,F.cherry); }
+        if (e >= 500 && e < 2700 && Math.floor(e/330)%2) thickLine(mx+2, my+1, cx - Math.max(1,r) + 1, cy + 1, C.tongue, 2);   // lengüetazo
+      }
+      if (e >= 2700) {                                // ¡congelamiento!: rayitas azules y copos
+        for (let i=0;i<4;i++) { const x = mx - 14 + i*9, y = my - 31 - (fr+i)%3; rect(x,y,1,3,F.ice); }
+        sparkle(mx-15, my-22+(fr%3), false); sparkle(mx+16, my-24-(fr%2), true);
+      }
+      break;
+    }
+    case 'pizza': {                                   // la rebanada vuela por el aire hasta su boca
+      if (e < 950) {
+        const k = e / 950, sx = mx + 30, x = sx + (mx - sx) * k, y = (my - 6) + 4 * k - 26 * 4 * k * (1 - k);
+        pizzaSlice(Math.round(x), Math.round(y));
+      } else if (e < 1150) sparkle(mx, my - 2, true);   // ¡chomp!
+      break;
+    }
+  }
+}
+
+function fxClean(e){
+  for (let i=0;i<7;i++){ const bx=8+i*8+Math.sin(e/200+i)*2, by=60-((e/18+i*9)%60); ell(bx,by,1.6+(i%3)*.6,1.6+(i%3)*.6,col('#d9f3ff')); put(bx-1,by-1,C.white); }
+}
+function fxMed(e){
+  sparkle(22,24+Math.sin(e/150)*2,true); sparkle(42,28,false);
+  bmp(['..x..','..x..','xxxxx','..x..','..x..'],30,Math.round(8+Math.sin(e/200)*2),{x:C.green});
+}
+function drawMoodBubble(m, a){
+  const bubble = icon => { ell(47,11,8,5,C.line); ell(47,11,7,4,C.white); icon(); };
+  if (m==='hungry' && !a) bubble(()=>bmp(['..xxxx..','.xxxxxx.','.xxxxxx.','..xxxx..','...yy...','...yy...','..y..y..'],43,7,{x:C.meat,y:C.boneDk}));
+  if (m==='sick') bubble(()=>bmp(['..x..','..x..','xxxxx','..x..','..x..'],45,9,{x:C.green}));
+  if (m==='sad' && !a) bubble(()=>bmp(['.xx.xx.','xxxxxxx','xxxxxxx','.xxxxx.','..xxx..','...x...'],43,8,{x:C.heart}));
+}
+
 function drawEffects(pal,p,fr,t,st){
   const a = curAnim(), m = mood();
   T = LAYER;
-  const bubble = (icon)=>{
-    ell(47,11,8,5,C.line); ell(47,11,7,4,C.white);
-    icon();
-  };
-  if (m==='hungry' && !a) bubble(()=>bmp(['..xxxx..','.xxxxxx.','.xxxxxx.','..xxxx..','...yy...','...yy...','..y..y..'],43,7,{x:C.meat,y:C.boneDk}));
-  if (m==='sick'){
-    bubble(()=>bmp(['..x..','..x..','xxxxx','..x..','..x..'],45,9,{x:C.green}));
-  }
-  if (m==='sad' && !a) bubble(()=>bmp(['.xx.xx.','xxxxxxx','xxxxxxx','.xxxxx.','..xxx..','...x...'],43,8,{x:C.heart}));
+  drawMoodBubble(m, a);
   if (m==='sleep' || m==='sleepy'){
     const o = Math.floor(t*2)%3, Z = ['xxxxx','...x.','..x..','.x...','xxxxx'];
     bmp(Z,48+o,14-o*2,{x:C.gold}); if (o>0) bmp(Z,56,7-o,{x:C.goldHi});
   }
+  if (p.eyes === 'xd') {                              // lagrimitas de risa que salen disparadas
+    for (const s of [-1,1]) { const k = fr%4; put(32+s*(11+k), 31+k*2, C.tear); put(32+s*(11+k), 32+k*2, C.tear); put(32+s*(14+k), 30+k, C.tear); }
+  }
   if (a){
     const e = now() - a.t0;
-    if (a.type==='eat' && e<700){
-      const k = e/700, x = 46-13*k, y = 10+26*k;
-      if (a.icon==='drum') bmp(['..xxxx..','.xxxxxx.','.xxxxxx.','..xxxx..','...yy...','...yy...','..y..y..'],Math.round(x)-3,Math.round(y)-3,{x:C.meat,y:C.boneDk});
-      else { rect(Math.round(x),Math.round(y),2,2,C.kibble); rect(Math.round(x)+3,Math.round(y)+2,2,2,C.kibble); rect(Math.round(x)-2,Math.round(y)+3,2,2,C.kibble); }
-    }
+    if (a.type==='eat') drawFood(a,e,fr,33,38);
     if (a.type==='play'){
       const bx = 32+20*Math.sin(e/260), by = 40-Math.abs(Math.sin(e/130))*22;
       ell(bx,by,3,3,C.ball); put(bx-1,by-1,C.ballHi); put(bx,by-1,C.ballHi);
     }
-    if (a.type==='clean'){
-      for (let i=0;i<7;i++){ const bx=8+i*8+Math.sin(e/200+i)*2, by=60-((e/18+i*9)%60); ell(bx,by,1.6+(i%3)*.6,1.6+(i%3)*.6,col('#d9f3ff')); put(bx-1,by-1,C.white); }
-    }
-    if (a.type==='med'){ sparkle(22,24+Math.sin(e/150)*2,true); sparkle(42,28,false); bmp(['..x..','..x..','xxxxx','..x..','..x..'],30,Math.round(8+Math.sin(e/200)*2),{x:C.green}); }
+    if (a.type==='clean') fxClean(e);
+    if (a.type==='med') fxMed(e);
     if (a.type==='evolve' || a.type==='hatch'){
       const k = Math.max(0,1-e/(a.type==='hatch'?900:700));
       if (k>0 && a.type==='hatch') { for (let i=0;i<W*W;i++) if (((i%W)+((i/W)|0)+fr)%2===0 || k>.6) LAYER[i]=C.white; }
@@ -1050,8 +1318,7 @@ function drawEffects(pal,p,fr,t,st){
       if (life < .35) put(x,y+1,cols[i%cols.length]);
     }
   }
-  // la pelota del minijuego (en las patitas mientras eliges; vuela al lado que salió)
-  if (game) drawGameBall(pal,t,fr);
+  if (game && game.kind === 'spot') drawGameBall(pal,t,fr);      // la pelota del minijuego
   drawHearts();
 }
 
@@ -1063,23 +1330,24 @@ function drawHearts(){
   }
 }
 
-/* pelota: sombra + cuerpo con raya que gira. Spot la lanza en parábola hasta x=4 (izq.) o x=60 (der.) */
+/* pelota: sombra + cuerpo con raya que gira */
 function drawBall(x,y,fr,shadowY,shadowC){
   ell(x,shadowY,3.6-Math.min(2,Math.max(0,(shadowY-y)/14)),1,shadowC);
   ell(x,y,3.6,3.6,col('#a63a2a')); ell(x,y,3,3,C.ball);
   if (fr%2) rect(Math.round(x)-3,Math.round(y),6,1,C.ballHi); else rect(Math.round(x),Math.round(y)-3,1,6,C.ballHi);
   put(x-1,y-1,C.white);
 }
+/* La pelota entra volando desde el lado g.side hacia la boca de Spot; si no la atrapa, sigue de largo y rebota. */
 function drawGameBall(pal,t,fr){
-  T = LAYER;
-  if (!ballAnim) { drawBall(32,50,0,55,pal.cloudSh); return; }
-  const e = now() - ballAnim.t0, s = ballAnim.dir === 'L' ? -1 : 1;
-  if (e < BALL_FLY_MS) {                     // vuelo
-    const k = e / BALL_FLY_MS;
-    drawBall(32 + s*24*k, 46 + 6*k - 36*4*k*(1-k), fr, 55, pal.cloudSh);
-  } else {                                   // rebote final y se queda ahí
-    const k = Math.min(1, (e - BALL_FLY_MS) / 350);
-    drawBall(32 + s*(24 + 3*k), 52 - 7*4*k*(1-k), k < 1 ? fr : 0, 55, pal.cloudSh);
+  const g = game; T = LAYER;
+  if (!g || g.kind !== 'spot' || g.phase === 'idle') return;
+  const e = now() - g.t0, s = g.side === 'L' ? -1 : 1, sx = g.side === 'L' ? 2 : 62, tx = 33, ty = 36;
+  if (e < g.T) {
+    const k = e / g.T;
+    drawBall(sx + (tx - sx) * k, 20 + (ty - 20) * k - 14 * 4 * k * (1 - k), fr, 55, pal.cloudSh);
+  } else if (g.result !== 'catch' && g.phase !== 'idle') {          // se le escapó: sigue y cae al piso del otro lado
+    const m = Math.min(1, (e - g.T) / 800);
+    drawBall(tx - s * 30 * m, ty + (52 - ty) * Math.min(1, m * 1.6) - Math.max(0, m - .6) * 6 * (1 - m), m < 1 ? fr : 0, 55, pal.cloudSh);
   }
 }
 
@@ -1089,17 +1357,52 @@ function drawGameBall(pal,t,fr){
 const K = {
   body:col('#262338'), hi:col('#3b3757'), outDay:col('#0d0b17'), outNight:col('#8f87d6'),
   eye:col('#ffe14d'), eyeDk:col('#0d0b17'), earIn:col('#6b4a80'), nose:col('#e690a8'),
-  soft:col('#8b84b8'), whisk:col('#6f679a'), z:col('#6b63c8'),
+  soft:col('#8b84b8'), whisk:col('#6f679a'), z:col('#6b63c8'), mouthIn:col('#5a1f2e'),
+  mouse:col('#c9c2d8'), mouseTail:col('#e690a8'), ring:col('#cfd8ff'), ringFar:col('#8f9be0'),
 };
 function thickLine(x0,y0,x1,y1,c,th){
   const n = Math.max(Math.abs(x1-x0), Math.abs(y1-y0), 1) * 2;
   for (let i=0;i<=n;i++) { const x=x0+(x1-x0)*i/n, y=y0+(y1-y0)*i/n; if (th<=1) put(x,y,c); else ell(x,y,th/2,th/2,c); }
 }
-function kushPose(fr){
-  const a = curAnim(), p = { sleep:kushAsleep(), eyes:'open', tail:[0,1,2,1][(fr>>1)%4], earTw:(fr%37===0), bob:(fr%8<4)?0:1, peek:false };
-  if (!p.sleep && fr%30===0) p.eyes = 'closed';
-  if (a && a.type === 'kushpeek') p.peek = true;
-  if (a && a.type === 'kushpet') { p.eyes = 'happy'; p.tail = [0,2,0,2][fr%4]; }
+function shiftLayer(dx,dy){                 // mueve todo el sprite (para los saltos y el zarpazo de Kush)
+  dx = Math.round(dx); dy = Math.round(dy); if (!dx && !dy) return;
+  const src = LAYER.slice(); LAYER.fill(0);
+  for (let y=0;y<W;y++) for (let x=0;x<W;x++) { const c = src[y*W+x]; if (!c) continue; const nx=x+dx, ny=y+dy; if (nx>=0&&ny>=0&&nx<W&&ny<W) LAYER[ny*W+nx]=c; }
+}
+function dimFrame(f){
+  for (let i=0;i<W*W;i++){ const c = OUT[i]; OUT[i] = ((255<<24) | (((c>>16&255)*f|0)<<16) | (((c>>8&255)*f|0)<<8) | ((c&255)*f|0)) >>> 0; }
+}
+const hearingNow = () => Math.floor(now()/7000) % 2 === 0;        // 7 s oye todo, 7 s ve todo: nunca las dos a la vez
+function kushPose(fr,t){
+  const a = curAnim(), m = mood(), g = (game && game.kind === 'kush') ? game : null;
+  const hearing = g ? g.mode === 'hear' : hearingNow();
+  const p = { sleep:kushAsleep(), eyes:'open', tail:[0,1,2,1][(fr>>1)%4], earTw:(fr%37===0), ears:'norm', bob:(fr%8<4)?0:1, peek:false, mouth:'w', dx:0, dy:0, shake:0 };
+  if (!p.sleep) {
+    if (hearing) { p.eyes = 'closed'; p.ears = 'up'; p.earTw = fr%3 === 0; }        // oye todo: ojos cerrados, orejas paradas y moviéndose
+    else { p.eyes = 'open'; p.ears = 'flat'; if (fr%30 === 0) p.eyes = 'closed'; }    // ve todo: ojos de par en par, orejas atrás
+    switch (m) {
+      case 'sick':   p.eyes = 'closed'; p.ears = 'flat'; p.shake = (fr%2) ? 1 : 0; break;
+      case 'hungry': case 'sad': if (!g) p.ears = 'flat'; break;
+      case 'sleepy': if (!g) p.eyes = (fr%8<6) ? 'half' : 'closed'; break;
+    }
+  }
+  if (g && g.pounce) {                               // zarpazo hacia la columna elegida
+    const jt = now() - g.pounce.t0;
+    if (jt >= 0 && jt < 420) { const s = Math.sin(Math.PI * jt / 420); p.dx = (g.pounce.zone - 1) * 10 * s; p.dy = -6 * s; p.eyes = 'open'; p.ears = 'flat'; p.mouth = 'open'; }
+  }
+  if (a) {
+    const e = now() - a.t0;
+    if (a.type === 'kushpeek') p.peek = true;
+    if (a.type === 'kushpet' || a.type === 'kushwin') { p.eyes = 'happy'; p.tail = [0,2,0,2][fr%4]; p.ears = 'norm'; }
+    if (a.type === 'clean') { p.eyes = 'happy'; p.tail = [0,2,0,2][fr%4]; }
+    if (a.type === 'med') p.eyes = 'closed';
+    if (a.type === 'no') p.shake = (Math.floor(e/90)%2) ? 1 : -1;
+    if (a.type === 'eat') {
+      const q = eatPose(a, e, fr);
+      p.eyes = q.eyes === 'xd' ? 'happy' : q.eyes; p.mouth = q.mouth === 'smile' ? 'w' : q.mouth; p.ears = 'norm';
+      p.tail = [0,2,0,2][fr%4]; p.shake = q.shake; p.dy = -q.jump;
+    }
+  }
   return p;
 }
 function drawKush(p,night,t){
@@ -1123,27 +1426,52 @@ function drawKush(p,night,t){
     rect(9,47,5,1,K.whisk); rect(28,47,5,1,K.whisk);
     return;
   }
-  const hy = p.bob|0, tw = p.tail|0;
+  const hy = p.bob|0, tw = p.tail|0, et = p.earTw ? 1 : 0;
   thickLine(41,51,47,50,K.body,3); thickLine(47,50,51,45,K.body,3); thickLine(51,45,52+tw,38,K.body,3);   // cola
   ell(32,48,10.5,6.5,K.body); ell(32,41,7.5,8.5,K.body);
   ell(27.5,50.5,2.8,4.5,K.body); ell(36.5,50.5,2.8,4.5,K.body);
   ell(27,53,3.8,1.8,K.body); ell(37,53,3.8,1.8,K.body);
   ell(32,28+hy,12.5,9.5,K.body); ell(20.5,31+hy,3,3,K.body); ell(43.5,31+hy,3,3,K.body);
-  const et = p.earTw ? 1 : 0;
-  poly([[21,25+hy],[19+et,10+hy],[30,19+hy]],K.body); poly([[43,25+hy],[45,10+hy+et],[34,19+hy]],K.body);
+  // orejas: paradas (oyendo), hacia atrás (viendo) o normales
+  const E = p.ears === 'up' ? { l:[[21,25],[20+et*1.5,6],[30,19]], r:[[43,25],[44-et*1.5,6],[34,19]] }
+          : p.ears === 'flat' ? { l:[[21,25],[13,14],[29,20]], r:[[43,25],[51,14],[35,20]] }
+          : { l:[[21,25],[19+et,10],[30,19]], r:[[43,25],[45,10+et],[34,19]] };
+  const ear = pts => pts.map(([x,y]) => [x, y+hy]);
+  poly(ear(E.l),K.body); poly(ear(E.r),K.body);
   outline(out);
   ONLY = K.body; ell(32,45,4,5.5,K.hi); ell(32,21+hy,5,2,K.hi); ell(24.5,50,2.2,3,K.hi); ONLY = null;
-  poly([[22,23+hy],[20.8,14+hy],[27,19.5+hy]],K.earIn); poly([[42,23+hy],[43.2,14+hy],[37,19.5+hy]],K.earIn);
+  const inner = pts => { const cx = (pts[0][0]+pts[1][0]+pts[2][0])/3, cy = (pts[0][1]+pts[1][1]+pts[2][1])/3; return pts.map(([x,y]) => [cx+(x-cx)*.55, cy+(y-cy)*.55+hy]); };
+  poly(inner(E.l),K.earIn); poly(inner(E.r),K.earIn);
   const ey = 29 + hy;
   const eye = (cx,k) => {
-    if (k === 'open') { ell(cx,ey,3.2,3.7,K.eye); rect(cx,ey-3,1,6,K.eyeDk); put(cx-2,ey-2,C.white); }
+    if (k === 'open') { ell(cx,ey,3.3,3.9,K.eye); rect(cx,ey-3,1,6,K.eyeDk); put(cx-2,ey-2,C.white); }
+    else if (k === 'half') { ell(cx,ey+1,3.2,1.8,K.eye); rect(cx,ey,1,3,K.eyeDk); rect(cx-3,ey-1,7,1,K.soft); }
     else if (k === 'closed') { rect(cx-3,ey+1,7,1,K.soft); put(cx-3,ey,K.soft); put(cx+3,ey,K.soft); }
     else if (k === 'happy') { rect(cx-2,ey-1,5,1,K.soft); put(cx-3,ey,K.soft); put(cx+3,ey,K.soft); }
+    else if (k === 'sad') { ell(cx,ey,3.2,3.7,K.eye); rect(cx,ey-3,1,6,K.eyeDk); rect(cx-3,ey-4,7,1,K.soft); }
   };
   eye(25,p.eyes); eye(39,p.eyes);
   rect(31,34+hy,2,1,K.nose);
-  [[30,36],[31,37],[32,36],[33,37],[34,36]].forEach(([x,y]) => put(x,y+hy,K.soft));
+  if (p.mouth === 'open') { ell(32,38+hy,2.8,2.2,K.mouthIn); ell(32,39.3+hy,1.6,.9,C.tongue); }
+  else if (p.mouth === 'chew') { ell(32,37.5+hy,2,1.4,K.mouthIn); }
+  else [[30,36],[31,37],[32,36],[33,37],[34,36]].forEach(([x,y]) => put(x,y+hy,K.soft));
   rect(10,32+hy,8,1,K.whisk); rect(11,35+hy,7,1,K.whisk); rect(47,32+hy,8,1,K.whisk); rect(47,35+hy,7,1,K.whisk);
+}
+
+/* ratón del minijuego: solo se VE en modo 👀 */
+function drawMouse(x,y,fr){
+  const w = (fr%2) ? 1 : 0;
+  thickLine(x-4,y+1,x-8,y-1+w,K.mouseTail,1);
+  ell(x,y,3.8,2.5,K.mouse); ell(x+1.8,y-2.2,1.4,1.4,K.mouseTail); put(x+3,y-1,C.ink); put(x+5,y,K.mouseTail);
+  put(x-1,y+3,K.mouse); put(x+2,y+3,K.mouse);
+}
+/* ondas de sonido del ratón: solo se OYEN en modo 👂 (se dibujan sobre la pantalla oscurecida) */
+function drawRings(x,y,t0){
+  const e = (now() - t0) / 1000;
+  for (let i=0;i<3;i++) {
+    const r = (e*14 + i*4.5) % 13;
+    for (let a=0;a<28;a++) { const ang = a/28*Math.PI*2; put(x + Math.cos(ang)*r, y + Math.sin(ang)*r*.55, r < 8 ? K.ring : K.ringFar); }
+  }
 }
 
 /* pantalla de la intro: silueta con rayo / oscuridad con ojos / disolución hacia la escena real */
@@ -1181,17 +1509,40 @@ function composeKushIntro(e,fr){
   const p = Math.min(1, Math.max(0, (e-2800)/1500));
   for (let i=0;i<W*W;i++) OUT[i] = BAYER[((i/W|0)&3)*4+((i%W)&3)] < p*16 ? TARGET[i] : DARKB[i];
 }
+let lastSqueak = -1;
 function renderKush(t,fr){
-  const night = isNight(), pal = night ? PAL.night : PAL.day;
+  const g = (game && game.kind === 'kush') ? game : null;
+  const night = isNight() || !!g, pal = night ? PAL.night : PAL.day;      // en el minijuego siempre es de noche
   if (kushIntro && now() - kushIntro.t0 >= INTRO_MS) kushIntro = null;
-  drawScene(pal,t,fr,night,true);
-  const p = kushPose(fr);
+  drawScene(pal,t,fr,night,S.k.poops);
+  const p = kushPose(fr,t);
   drawKush(p,night,t);
+  shiftLayer(p.dx + p.shake, p.dy);
   T = LAYER;
+  const a = curAnim();
+  if (!kushIntro) drawMoodBubble(mood(), a);
   if (p.sleep) { const o = Math.floor(t*2)%3, Z = ['xxxxx','...x.','..x..','.x...','xxxxx']; bmp(Z,10+o,28-o*2,{x:K.z}); if (o>0) bmp(Z,6,20-o,{x:K.z}); }
+  if (a) {
+    const e = now() - a.t0;
+    if (a.type === 'eat') drawFood(a,e,fr,32,36);
+    if (a.type === 'clean') fxClean(e);
+    if (a.type === 'med') fxMed(e);
+  }
+  if (g && g.prey) {                                     // el ratón: visible solo si Kush está en modo "ver"
+    const pr = g.prey, x = HS_X[pr.zone];
+    if (!pr.done && pr.type === 'see' && g.mode === 'see') drawMouse(x + Math.round(Math.sin((now()-pr.t0)/110)), 50, fr);
+    if (pr.done && pr.caught && now() - pr.endAt < 700) { sparkle(x-3, 46, true); sparkle(x+4, 44, false); }
+  }
   drawHearts();
   if (kushIntro) composeKushIntro(now() - kushIntro.t0, fr);
   else for (let i=0;i<W*W;i++) OUT[i] = LAYER[i] || SCENE[i];
+  if (g && g.mode === 'hear') {                          // oyendo: el mundo se oscurece y solo se perciben las ondas
+    dimFrame(.42); T = OUT;
+    if (g.prey && !g.prey.done && g.prey.type === 'hear') {
+      drawRings(HS_X[g.prey.zone], 50, g.prey.t0);
+      if (fr !== lastSqueak && fr%3 === 0) { lastSqueak = fr; sfx('squeak'); }
+    }
+  }
   ctx.putImageData(img,0,0);
   updateHud();
 }
@@ -1200,7 +1551,7 @@ function render(){
   const t = performance.now()/1000, fr = Math.floor(t*4);
   if (S.char === 'kush') return renderKush(t,fr);
   const st = stageOf(), pal = S.sleeping ? PAL.night : PAL.day;
-  drawScene(pal,t,fr,S.sleeping);
+  drawScene(pal,t,fr,S.sleeping,S.poops);
   const p = pose(fr,t);
   if (st==='egg') { drawEgg(p,pal); }
   else { drawDog(p,pal,st,fr,t); }
@@ -1214,31 +1565,30 @@ function render(){
 let hudAt = 0;
 function updateHud(){
   const t = now(); if (t - hudAt < 250) return; hudAt = t;
-  const m = mood(), kush = S.char === 'kush';
+  const m = mood(), kush = isKush(), p = pet(), sl = asleepNow(), ready = kush || S.hatched, L = I18N[LANG];
   let line;
-  if (kush) {
-    const arr = I18N[LANG][kushAsleep() ? 'kush.say.sleep' : 'kush.say.awake'];
-    line = kushIntro ? '…' : arr[Math.floor(t/7000) % arr.length];
-  } else if (game) line = game.say;
-  else {
-    if (m==='ok' || m==='happy') line = S.poops ? tr('say.poop')[0] : null;
-    if (!line) { const arr = I18N[LANG]['say.'+m] || I18N[LANG]['say.ok']; line = arr[Math.floor(t/7000) % arr.length]; }
+  if (game) line = game.say;
+  else if (kush) {
+    if (kushIntro) line = '…';
+    else if (m === 'ok' || m === 'happy') line = p.poops ? L['kush.say.poop'][0] : L[hearingNow() ? 'kush.say.hear' : 'kush.say.see'][0];
+    else line = (L['kush.say.'+m] || L['kush.say.hear'])[0];
+  } else {
+    if (m==='ok' || m==='happy') line = p.poops ? tr('say.poop')[0] : null;
+    if (!line) { const arr = L['say.'+m] || L['say.ok']; line = arr[Math.floor(t/7000) % arr.length]; }
   }
   const sayEl = $('#say'); if (sayEl.textContent !== line) sayEl.textContent = line;
   for (const k of ['hunger','happy','energy']) {
     const el = document.querySelector(`.bar[data-k=${k}]`);
-    el.querySelector('i').style.width = clamp(S[k]) + '%';
-    el.classList.toggle('low', S.hatched && S[k] < 25);
+    el.querySelector('i').style.width = clamp(p[k]) + '%';
+    el.classList.toggle('low', ready && p[k] < 25);
   }
-  document.querySelector('.bar[data-k=energy]').classList.toggle('charging', S.hatched && S.sleeping && S.energy < 99);
-  $('#bars').style.visibility = (S.hatched && !kush) ? 'visible' : 'hidden';
-  ['bFeed','bPlay','bLight','bClean','bMed'].forEach(id => $('#'+id).classList.toggle('dim', kush));
-  const spot = !kush;
-  $('#bFeed').classList.toggle('alert', spot && S.hatched && !S.sleeping && S.hunger < 25);
-  $('#bClean').classList.toggle('alert', spot && S.poops > 0 && !S.sleeping);
-  $('#bMed').classList.toggle('alert', spot && S.sick);
-  $('#bPlay').classList.toggle('alert', spot && S.hatched && !S.sleeping && !S.sick && S.happy < 25 && S.energy >= 20);
-  $('#bLight').classList.toggle('alert', spot && S.hatched && !S.sleeping && S.energy < 20);
+  document.querySelector('.bar[data-k=energy]').classList.toggle('charging', ready && sl && p.energy < 99);
+  $('#bars').style.visibility = ready ? 'visible' : 'hidden';
+  $('#bFeed').classList.toggle('alert', ready && !sl && p.hunger < 25);
+  $('#bClean').classList.toggle('alert', ready && p.poops > 0 && !sl);
+  $('#bMed').classList.toggle('alert', ready && p.sick);
+  $('#bPlay').classList.toggle('alert', ready && !sl && !p.sick && p.happy < 25 && p.energy >= 20);
+  $('#bLight').classList.toggle('alert', ready && !kush && !sl && p.energy < 20);
 }
 
 /* ---------- arranque ---------- */
@@ -1253,7 +1603,8 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) tick
 window.addEventListener('pagehide', save);
 render();
 
-window.__tdg = { get S(){ return S; }, advance, tick, render, save, addDevotion, startAnim, mood, stageOf, setChar, startKushIntro, get kushIntro(){ return kushIntro; }, kushAsleep, isNight };
+window.__tdg = { get S(){ return S; }, advance, tick, render, save, addDevotion, startAnim, mood, stageOf, setChar, startKushIntro, get kushIntro(){ return kushIntro; }, kushAsleep, isNight,
+                 pet, get game(){ return game; }, FOODS, feed, gameTap, pounce, setMode };
 })();
 </script>
 </body>
