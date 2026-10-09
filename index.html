@@ -611,8 +611,8 @@ function openPlay(){
   if (!guard()) return;
   const p = pet();
   if (asleepNow()) return toast(trp('t.asleep'));
-  if (p.sick) return toast(trp('t.cantPlaySick'));
-  if (p.energy < 20) return toast(trp('t.tooTired'));
+  if (p.sick) { startAnim('no', 1100); sfx('no'); return toast(trp('t.cantPlaySick')); }      // quiere jugar y no puede
+  if (p.energy < 20) { startAnim('no', 1100); sfx('no'); return toast(trp('t.tooTired')); }
   hidePane();
   if (isKush()) startKushGame(); else startSpotGame();
 }
@@ -1086,8 +1086,10 @@ function drawDog(p,pal,st,fr,t){
   glow(pal,fr);
   if (p.spot) {                                                               // LA MANCHA: de ahí le viene el nombre; se mueve según cómo se siente
     const q = p.spot, b = q.brow; ONLY = FUR;                                 // (solo se pinta sobre el pelo)
-    if (b < .04) {                                                            // una sola mancha
-      E(q.x,q.y,q.rx,q.ry,C.ink); E(q.x-q.rx*.7,q.y+q.ry*.45,q.rx*.55,q.ry*.6,C.ink); E(q.x+q.rx*.65,q.y-q.ry*.4,q.rx*.5,q.ry*.55,C.ink);
+    if (b < .04) {                                                            // una sola mancha (un puntito; con los mínimos para que nunca desaparezca)
+      const rx = Math.max(q.rx, 1.1), ry = Math.max(q.ry, .9);
+      E(q.x,q.y,rx,ry,C.ink);
+      if (rx >= 1.7) { E(q.x-rx*.7,q.y+ry*.45,rx*.55,ry*.6,C.ink); E(q.x+rx*.65,q.y-ry*.4,rx*.5,ry*.55,C.ink); }   // solo si está "grande" se le notan las lobulitos
     } else {                                                                  // se parte en dos y sube a la frente: cejas de enojo
       const lerp = (a2,b2) => a2 + (b2 - a2) * b;
       for (const sg of [-1, 1]) {
@@ -1234,7 +1236,7 @@ function pose(fr,t){
       if (g.tapAt != null) { const jt = (now() - g.t0) - g.tapAt; if (jt >= 0 && jt < JUMP_MS) p.jump = Math.sin(Math.PI * jt / JUMP_MS) * 7; }
     } else if (g.phase === 'result') {
       if (g.result === 'catch') { p.eyes = 'xd'; p.mouth = 'xd'; p.shake = (fr%2) ? 1 : -1; p.blush = true; }
-      else { p.eyes = 'happy'; p.mouth = 'open'; p.tongue = true; p.blush = true; }          // si falla no hace berrinche: se ríe de sí mismo
+      else { p.eyes = 'open'; p.mouth = 'frown'; p.earDrop = 0; p.tail = 0; }                 // se le escapó la pelota: no pudo, y se enoja (cejas)
     } else { p.eyes = 'open'; p.mouth = 'smile'; }
   }
   if (a) {
@@ -1259,34 +1261,35 @@ function pose(fr,t){
   // ---- La mancha negra de Spot (de ahí su nombre): chiquita, viaja por todo el cuerpo (panza, cola, cabeza) según lo que
   // siente y, cuando amerita, se DIVIDE en dos y se vuelve cejas de enojo.
   const zone = { belly:[37,46], tail:[50+p.tail,45], head:[32,21.5], low:[35,50.5] };
-  let tg = { x:37, y:46, rx:2.1, ry:1.6, brow:0, jx:0, jy:0 };
+  // TAMAÑO: es un puntito (rx 1.35 × ry 1.05) y NUNCA pasa de 2.1 × 1.6, que era su tamaño "normal" antes (Juan: "máximo como está ahora")
+  let tg = { x:37, y:46, rx:1.35, ry:1.05, brow:0, jx:0, jy:0 };
   const Lm = I18N[LANG], lineIdx = Math.floor(now() / 7000);
-  const mission = !game && !a && !S.poops && (m === 'ok' || m === 'happy')                // declara su misión: ¡voy a encontrar a My Happy Thing!
-    && (m === 'ok' ? [0,1] : [0]).includes(lineIdx % (Lm['say.'+m] || [1]).length) && (now() % 7000) < 2600;
-  const grimace = !!(a && a.type === 'med');                                              // la medicina sabe feo (Spot nunca hace berrinche por hambre)
-  const gameFace = !!(g && g.phase === 'fly');                                            // concentración total con la pelota
-  if (p.eyes === 'xd')              tg = { x:35, y:49, rx:2.6, ry:1.8, brow:0, jx:Math.sin(t*14)*2.2, jy:Math.sin(t*18) };      // de risa: se sacude
-  else if (a && a.type === 'eat')   tg = { x:35, y:48, rx:2.1+((fr%2)?.6:0), ry:1.6+((fr%2)?.4:0), brow:0, jx:0, jy:0 };       // late con cada bocado
-  else if (a && a.type === 'pet')   tg = { x:zone.head[0]+Math.sin(t*9), y:zone.head[1], rx:1.9, ry:1.5, brow:0, jx:0, jy:0 };    // sube a la cabeza, donde lo acarician
+  // Spot SOLO se enoja (cejas) cuando NO PUEDE hacer algo: se le escapa la pelota, quiere jugar/dormir y no puede (animación "no"),
+  // o intenta acordarse de qué es My Happy Thing ("I forgot what it is…") y no lo logra.
+  const forgot = !game && !a && !S.poops && m === 'ok' && (lineIdx % (Lm['say.ok'] || [1]).length) === 1 && (now() % 7000) < 2600;
+  const cant = !!(a && a.type === 'no') || !!(g && g.phase === 'result' && g.result === 'miss');
+  if (p.eyes === 'xd')              tg = { x:35, y:49, rx:2.1, ry:1.6, brow:0, jx:Math.sin(t*14)*2, jy:Math.sin(t*18) };           // de risa: se sacude (y crece lo máximo)
+  else if (a && a.type === 'eat')   tg = { x:35, y:48, rx:1.35+((fr%2)?.45:0), ry:1.05+((fr%2)?.3:0), brow:0, jx:0, jy:0 };          // late con cada bocado
+  else if (a && a.type === 'pet')   tg = { x:zone.head[0]+Math.sin(t*9), y:zone.head[1], rx:1.2, ry:1, brow:0, jx:0, jy:0 };         // sube a la cabeza, donde lo acarician
   else switch (m) {
-    case 'happy':  tg = { x:zone.tail[0], y:zone.tail[1], rx:1.7, ry:1.7, brow:0, jx:0, jy:Math.sin(t*6) * .6 }; break;          // se sube a la colita que mueve
-    case 'hungry': tg = { x:zone.low[0], y:zone.low[1], rx:1.4, ry:1, brow:0, jx:0, jy:0 }; break;                              // se encoge y se hunde
-    case 'sad':    tg = { x:33, y:51, rx:1.5, ry:.9, brow:0, jx:0, jy:0 }; break;
-    case 'sleepy': tg = { x:38, y:49, rx:1.9, ry:1.4, brow:0, jx:0, jy:0 }; break;
-    case 'sleep':  tg = { x:42, y:49.5, rx:2+Math.sin(t*1.8)*.3, ry:1.5+Math.sin(t*1.8)*.2, brow:0, jx:0, jy:0 }; break;         // hecha bolita en la base de la cola, respira con él
-    case 'sick':   tg = { x:36, y:47, rx:1.5+Math.sin(t*11)*.4, ry:1.2, brow:0, jx:Math.sin(t*9)*1.5, jy:Math.cos(t*7)*1.1 }; break;   // se marea
+    case 'happy':  tg = { x:zone.tail[0], y:zone.tail[1], rx:1.2, ry:1.2, brow:0, jx:0, jy:Math.sin(t*6) * .6 }; break;             // se sube a la colita que mueve
+    case 'hungry': tg = { x:zone.low[0], y:zone.low[1], rx:.95, ry:.7, brow:0, jx:0, jy:0 }; break;                                // se encoge y se hunde
+    case 'sad':    tg = { x:33, y:51, rx:.95, ry:.65, brow:0, jx:0, jy:0 }; break;
+    case 'sleepy': tg = { x:38, y:49, rx:1.2, ry:.9, brow:0, jx:0, jy:0 }; break;
+    case 'sleep':  tg = { x:42, y:49.5, rx:1.3+Math.sin(t*1.8)*.2, ry:1+Math.sin(t*1.8)*.15, brow:0, jx:0, jy:0 }; break;          // hecha bolita en la base de la cola, respira con él
+    case 'sick':   tg = { x:36, y:47, rx:1+Math.sin(t*11)*.25, ry:.8, brow:0, jx:Math.sin(t*9)*1.4, jy:Math.cos(t*7)*1 }; break;     // se marea
     default: {                                                                                          // tranquilo: pasea (panza → cola → panza → cabeza)
       const tour = [zone.belly, zone.tail, zone.belly, zone.head][Math.floor(t / 9) % 4];
-      tg = { x:tour[0]+Math.sin(t*1.3)*.8, y:tour[1]+Math.sin(t*2)*.4, rx:2.1, ry:1.6, brow:0, jx:0, jy:0 };
+      tg = { x:tour[0]+Math.sin(t*1.3)*.8, y:tour[1]+Math.sin(t*2)*.4, rx:1.35, ry:1.05, brow:0, jx:0, jy:0 };
     }
   }
-  tg.brow = (mission || grimace || gameFace) ? 1 : 0;
+  tg.brow = (forgot || cant) ? 1 : 0;
   for (const k of ['x','y','rx','ry','brow']) SPOT[k] += (tg[k] - SPOT[k]) * .22;         // se desliza con suavidad de un lugar a otro
   p.spot = { x:SPOT.x + tg.jx, y:SPOT.y + tg.jy, rx:SPOT.rx, ry:SPOT.ry, brow:SPOT.brow };
   if (p.eyes === 'xd') p.jump = Math.max(p.jump || 0, (fr%2) ? 1 : 0);                                          // la risa lo hace rebotar
   return p;
 }
-const SPOT = { x:37, y:46, rx:2.1, ry:1.6, brow:0 };         // estado suavizado de la mancha
+const SPOT = { x:37, y:46, rx:1.35, ry:1.05, brow:0 };       // estado suavizado de la mancha
 
 /* ---------- comida: cada una con su propia animación ---------- */
 const F = {
@@ -1672,7 +1675,8 @@ function composeKushIntro(e,fr){
 let lastSqueak = -1;
 function renderKush(t,fr){
   const g = (game && game.kind === 'kush') ? game : null;
-  const night = isNight() || !!g, pal = night ? PAL.night : PAL.day;      // en el minijuego siempre es de noche
+  // Cuando Kush está DESPIERTA siempre es de noche (aunque sea de día afuera); dormida, el escenario sigue al reloj
+  const night = clockNight() || !kushAsleep() || !!g, pal = night ? PAL.night : PAL.day;
   if (kushIntro && now() - kushIntro.t0 >= INTRO_MS) kushIntro = null;
   drawScene(pal,t,fr,night,S.k.poops);
   const p = kushPose(fr,t);
