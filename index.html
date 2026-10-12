@@ -170,6 +170,30 @@ body{
 .opts{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
 .opts button{font:inherit;font-weight:600;font-size:14px;cursor:pointer;background:#fff;border:3px solid var(--ink);border-radius:12px;padding:7px 12px}
 .opts button.danger{margin-left:auto;color:#b3261e}
+
+/* ---------- glitch (Spot enfermo): toda la app se descompone ---------- */
+html.glitch body::after{                       /* líneas de escaneo sobre todo */
+  content:"";position:fixed;inset:0;z-index:80;pointer-events:none;
+  background:repeating-linear-gradient(0deg,#0000 0 2px,#0000001a 2px 3px);
+}
+html.glitch body::before{                      /* una franja de "interferencia" que sube cada tanto */
+  content:"";position:fixed;left:0;right:0;height:14vh;z-index:81;pointer-events:none;top:-20vh;
+  background:linear-gradient(#0000,#ffffff22,#0000);mix-blend-mode:difference;
+  animation:g-sweep 7s linear infinite;
+}
+@keyframes g-sweep{0%{top:-20vh}60%{top:110vh}100%{top:110vh}}
+@media (prefers-reduced-motion:no-preference){
+  html.glitch .device{animation:g-dev 5.3s steps(1,end) infinite}
+  html.glitch .logo{animation:g-logo 3.7s steps(1,end) infinite}
+  html.glitch .btn:nth-child(3n+1){animation:g-btn 4.3s steps(1,end) infinite}
+  html.glitch .say{animation:g-say 2.9s steps(1,end) infinite}
+}
+/* (usan "translate"/"rotate" sueltos para no pelear con los "transform" que pone el JS) */
+@keyframes g-dev{0%,100%{translate:0 0;rotate:0deg}8%{translate:-3px 1px}9%{translate:4px -2px;rotate:-.6deg}10%{translate:0 0;rotate:0deg}52%{translate:2px 0}53%{translate:-5px 2px;rotate:.8deg}54%{translate:0 0;rotate:0deg}86%{translate:0 -2px}}
+@keyframes g-logo{0%,100%{opacity:1;translate:0 0}20%{opacity:.25}21%{opacity:1;translate:5px 0}22%{translate:0 0}70%{opacity:.5;translate:-6px 1px}71%{opacity:1;translate:0 0}}
+@keyframes g-btn{0%,100%{translate:0 0;rotate:0deg}30%{translate:-4px 0}31%{translate:6px 0;rotate:1.5deg}32%{translate:0 0;rotate:0deg}}
+@keyframes g-say{0%,100%{letter-spacing:0}40%{letter-spacing:2px;text-shadow:3px 0 #f0f,-3px 0 #0ff}41%{letter-spacing:0;text-shadow:none}}
+html.g-rgb .device,html.g-rgb .logo,html.g-rgb .say,html.g-rgb .foot{filter:drop-shadow(4px 0 #ff2bd6) drop-shadow(-4px 0 #19f5ff)}
 </style>
 </head>
 <body>
@@ -289,6 +313,9 @@ const I18N = {
     't.allClean':'All clean ✨', 't.notSick':"{name} isn't sick 🙂", 't.cured':'💊 {name} is cured!',
     't.born':'🐶 Spot, the Dog God, is born!', 't.newEgg':'🥚 A new cloud egg appeared',
     't.kushSleeping':'Kush is sleeping. Let her be. 💤',
+    't.toTops':'⬛ The spot took over everything… this is Tops.', 't.fromTops':'⬜ Spot is back.', 't.topsNoMouth':'Tops has no mouth…',
+    'stage.tops':'Tops', 'dev.tops':'Devotion',
+    'say.grow':['Something is growing on me…', 'My spot… is it bigger?', "I don't feel like myself…"], 'say.tops':['…'],
     't.wish':'🌠 Spot made a wish… My Happy Thing?', 't.stuffed':'😵 {name} is stuffed…', 't.overSick':'🤢 {name} ate way too much and got sick', 't.poopNow':'💩 Oops… {name} had to go',
     // comida
     'feed.title':'What shall we feed?', cancel:'Cancel',
@@ -359,6 +386,9 @@ const I18N = {
     't.allClean':'Todo limpio ✨', 't.notSick':'{name} no está enfermo 🙂', 'k.t.notSick':'{name} no está enferma 🙂', 't.cured':'💊 ¡{name} se curó!',
     't.born':'🐶 ¡Nació Spot, el Dios Perro!', 't.newEgg':'🥚 Un nuevo huevo de nube apareció',
     't.kushSleeping':'Kush está dormida. Déjala. 💤',
+    't.toTops':'⬛ La mancha se lo comió todo… ahora es Tops.', 't.fromTops':'⬜ Spot volvió.', 't.topsNoMouth':'Tops no tiene boca…',
+    'stage.tops':'Tops', 'dev.tops':'Devoción',
+    'say.grow':['Algo me está creciendo…', 'Mi mancha… ¿es más grande?', 'No me siento yo…'], 'say.tops':['…'],
     't.wish':'🌠 Spot pidió un deseo… ¿My Happy Thing?', 't.stuffed':'😵 {name} está empachado…', 't.overSick':'🤢 {name} comió demasiado y se enfermó', 't.poopNow':'💩 Uy… {name} tuvo que ir',
     'feed.title':'¿Qué le damos?', cancel:'Cancelar',
     'food.kibble':'Croquetas', 'food.kibble.sub':'llenan',
@@ -421,6 +451,7 @@ const DEFAULT = {
   hatched:false, hatchTaps:0,
   hunger:70, happy:70, energy:80,
   poops:0, poopAcc:0, sick:false, sickAcc:0, sleeping:false, over:0,      // over = lo que se pasó de lleno (Spot come sin límite… con consecuencias)
+  neglect:0, tops:false,       // descuido (0–100): su mancha crece; al llegar a 100 se vuelve Tops (y regresa si lo atiendes)
   devotion:0, unlocked:[], ageMin:0,
   lastPetDevo:0, mute:false, last:Date.now(),
   char:'spot',                 // personaje en pantalla: 'spot' | 'kush'
@@ -445,7 +476,8 @@ const now = () => Date.now();
 /* =====================================================================
    LÓGICA
    ===================================================================== */
-const stageOf = () => !S.hatched ? 'egg' : S.devotion < STAGE_AT.spot ? 'cachorro' : S.devotion < STAGE_AT.dios ? 'spot' : 'dios';
+const stageByDev = () => S.devotion < STAGE_AT.spot ? 'cachorro' : S.devotion < STAGE_AT.dios ? 'spot' : 'dios';
+const stageOf = () => !S.hatched ? 'egg' : S.tops ? 'tops' : stageByDev();       // Tops = Spot con la mancha que se lo comió todo (en negativo, sin boca)
 const stageName = st => tr('stage.'+st);
 
 /* ---------- Spot y Kush se cuidan igual: todo opera sobre "la mascota en pantalla" ---------- */
@@ -495,6 +527,17 @@ function advance(min, away){
     if (S.sleeping && S.energy >= 99) { S.sleeping = false; S.energy = 100; toast(tr('t.woke')); }
     else if (!S.sleeping && S.energy <= 3 && !away) { S.sleeping = true; toast(tr('t.tired')); }
     S.ageMin += min;
+    // ---- Descuido: en vez de morir, su mancha crece y crece hasta volverse Tops. Se recupera atendiéndolo.
+    if (S.tops) S.hunger = Math.max(S.hunger, 50);                          // Tops no tiene boca: no se le puede dar de comer (ni tiene hambre)
+    const crit = S.sick || S.hunger < 15 || S.happy < 15 || S.poops >= 3;
+    const fine = !S.sick && S.hunger > 40 && S.happy > 40 && S.poops === 0;
+    if (away) { if (crit) S.neglect = Math.min(90, S.neglect + Math.min(60, min * .25)); }      // ausente: avanza despacio y nunca llega solo a Tops
+    else if (crit) S.neglect = Math.min(100, S.neglect + min);
+    else if (fine) S.neglect = Math.max(0, S.neglect - min * 2);
+    else if (S.tops && S.happy > 50) S.neglect = Math.max(0, S.neglect - min * .5);
+    if (S.sleeping && S.tops) S.neglect = Math.max(0, S.neglect - min);        // dormir lo cura de a poquito
+    if (!S.tops && S.neglect >= 100) { S.tops = true; startAnim('tops', 1800); sfx('no'); toast(tr('t.toTops')); }
+    else if (S.tops && S.neglect <= 55) { S.tops = false; startAnim('tops', 1800); sfx('fanfare'); toast(tr('t.fromTops')); }
   }
   advancePet(S.k, 'Kush', min, away, kushAsleep());      // Kush duerme de día (según el reloj)
   // Kush se duerme SOLA cuando le queda poca energía, y no despierta hasta que su barra se llena (sin avisarle a nadie)
@@ -534,15 +577,16 @@ function moodOf(p, sl, hatched){
 }
 const mood = () => isKush() ? moodOf(S.k, kushAsleep(), true) : moodOf(S, S.sleeping, S.hatched);
 
+const attend = n => { S.neglect = Math.max(0, (S.neglect || 0) - n); };      // atenderlo (acariciar, jugar, limpiar, curar…) le baja el descuido
 function addDevotion(n){
-  const before = stageOf();
+  const before = stageByDev();
   S.devotion += n;
   for (const d of DOGERHOOD) {
     if (S.devotion >= d.at && !S.unlocked.includes(d.id)) {
       S.unlocked.push(d.id); toast(tr('t.joined', { name: tr('dog.'+d.id+'.name') })); sfx('fanfare');
     }
   }
-  const after = stageOf();
+  const after = stageByDev();
   if (after !== before) { startAnim('evolve', 2600); toast(tr('t.evolved', { stage: stageName(after) })); sfx('fanfare'); }
 }
 
@@ -571,6 +615,7 @@ function openFeed(){
   if (!guard()) return;
   const p = pet();
   if (asleepNow()) return toast(trp('t.asleep'));
+  if (!isKush() && S.tops) { startAnim('no', 1100); sfx('no'); return toast(tr('t.topsNoMouth')); }      // Tops no tiene boca
   // Kush NO come si no quiere; Spot, en cambio, come lo que le des (y ya veremos las consecuencias)
   if (isKush() && p.hunger >= 92) { startAnim('no', 900); sfx('no'); return toast(trp('t.notHungry')); }
   showPane(`<h3>${tr('feed.title')}</h3>
@@ -630,6 +675,7 @@ function finishGame(){
   hidePane();
   startAnim(K ? 'kushwin' : 'play', 2600, { xd: !K && w >= 3 });          // Spot solo se muere de risa si ganó
   p.energy = clamp(p.energy - (K ? 10 : 15)); p.hunger = clamp(p.hunger - 8);
+  if (!K) attend(15);                                           // jugar con él es atenderlo
   if (w >= 3) { p.happy = clamp(p.happy + 30); gain(5); toast(tr('t.won', { w, name: petName() })); sfx('fanfare'); }
   else        { p.happy = clamp(p.happy + 10); gain(1); toast(tr('t.lost', { w })); }
   save();
@@ -720,7 +766,7 @@ function clean(){
   if (asleepNow()) return toast(trp('t.shh'));
   if (!p.poops) return toast(tr('t.allClean'));
   p.poops = 0; p.sickAcc = Math.max(0, p.sickAcc - 40); p.happy = clamp(p.happy + 5);
-  startAnim('clean', 1800); sfx('happy'); gain(2); save();
+  startAnim('clean', 1800); sfx('happy'); gain(2); if (!isKush()) attend(8); save();
 }
 function medicine(){
   if (!guard()) return;
@@ -728,9 +774,9 @@ function medicine(){
   if (asleepNow()) return toast(trp('t.shh'));
   if (!p.sick) return toast(trp('t.notSick'));
   p.sick = false; p.sickAcc = 0; p.happy = clamp(p.happy - 5);
-  startAnim('med', 2000); sfx('happy'); gain(5); toast(trp('t.cured')); save();
+  startAnim('med', 2000); sfx('happy'); gain(5); if (!isKush()) attend(10); toast(trp('t.cured')); save();
 }
-let xdCool = 0;
+let xdCool = 0, petAttendAt = 0;
 function petSpot(){
   if (game) return gameTap();
   if (isKush()) return petKush();
@@ -745,7 +791,8 @@ function petSpot(){
   if (S.sleeping) return toast(tr('t.shhPet'));
   const lol = S.happy >= 65 && now() > xdCool;                   // la risa XD no es automática: solo si está de buenas y máx. cada 30 s
   if (lol) xdCool = now() + 30000;
-  startAnim('pet', 1500, { xd: lol }); spawnHearts(3); sfx('bark');
+  startAnim('pet', 1500, { xd: lol && !S.tops }); spawnHearts(3); sfx(S.tops ? 'no' : 'bark');      // Tops no tiene boca: no ladra
+  if (now() > petAttendAt) { attend(3); petAttendAt = now() + 4000; }
   S.happy = clamp(S.happy + 2);
   if (S.happy < 95 && S.ageMin - S.lastPetDevo > 5) { S.lastPetDevo = S.ageMin; addDevotion(1); }
   save();
@@ -779,11 +826,11 @@ function nextToast(){
 
 const modal = $('#modal');
 function openInfo(){
-  const st = stageOf();
-  $('#mName').textContent = S.hatched ? 'Spot' : tr('m.egg');
+  const st = S.hatched ? stageByDev() : 'egg';
+  $('#mName').textContent = S.tops ? tr('stage.tops') : S.hatched ? 'Spot' : tr('m.egg');
   const a = Math.floor(S.ageMin), d = Math.floor(a/1440), h = Math.floor((a%1440)/60), mi = a%60;
   const age = !S.hatched ? tr('m.notBorn') : d ? `${d} d ${h} h` : h ? `${h} h ${mi} min` : `${mi} min`;
-  $('#mSub').textContent = `${stageName(st)} · ${tr('m.age', { a: age })}`;
+  $('#mSub').textContent = `${S.tops ? tr('stage.tops') : stageName(st)} · ${tr('m.age', { a: age })}`;
   const next = st === 'cachorro' ? STAGE_AT.spot : st === 'spot' ? STAGE_AT.dios : DOGERHOOD[DOGERHOOD.length-1].at;
   const prev = st === 'cachorro' ? 0 : st === 'spot' ? STAGE_AT.spot : STAGE_AT.dios;
   $('#dLabel').textContent = tr('dev.' + st);
@@ -1015,6 +1062,13 @@ function flame(cx,base,h,fr,ph){
 }
 
 /* Spot es una llama blanca de plasma: el borde de su pelaje lame hacia arriba y a los lados */
+function invertLayer(){                      // negativo del perro en escala de grises: blanco ↔ negro (sin colores raros)
+  for (let i=0;i<W*W;i++){
+    const c = LAYER[i]; if (!c) continue;
+    const l = (c & 255) * .3 + ((c >> 8) & 255) * .59 + ((c >> 16) & 255) * .11, v = Math.round(255 - l);
+    LAYER[i] = (0xff000000 | (v << 16) | (v << 8) | v) >>> 0;
+  }
+}
 function flameEdge(pal,t,flare){
   const n = (a,b) => Math.sin(a*.4+b*9)*.5 + Math.sin(a*.9-b*13)*.3 + Math.sin(a*.17+b*5)*.2;      // -1..1
   const { core, mid, tip } = pal.wisp;
@@ -1138,8 +1192,8 @@ function drawDog(p,pal,st,fr,t){
       E(33,41.2,3.6,1.7,C.tongue,1);
     }
   };
-  mouth(p.mouth);
-  if (p.blush){ E(22.5,34.5,2.4,1.2,C.blush,1); E(42.5,34.5,2.4,1.2,C.blush,1); }
+  if (st !== 'tops') mouth(p.mouth);                                         // Tops NO tiene boca
+  if (p.blush && st !== 'tops'){ E(22.5,34.5,2.4,1.2,C.blush,1); E(42.5,34.5,2.4,1.2,C.blush,1); }
 
   // ---- extras de la forma divina
   if (st==='dios'){
@@ -1147,6 +1201,7 @@ function drawDog(p,pal,st,fr,t){
     sparkle(18,14+((fr>>1)%2),false); sparkle(47,10+((fr>>1)%2),true); sparkle(6,32,false); sparkle(58,30,false);
   }
   if (st==='spot'){ sparkle(16,18+((fr>>1)%2),false); sparkle(50,16,false); }
+  if (st==='tops') invertLayer();      // Tops: lo blanco se vuelve negro y lo negro (su puntito) se vuelve blanco
 }
 
 /* ---------- animaciones y partículas ---------- */
@@ -1259,40 +1314,109 @@ function pose(fr,t){
       case 'evolve':p.eyes='xd'; p.mouth='xd'; p.tail=wag(2); p.earDrop=0; p.jump=Math.abs(Math.sin(e/160))*4; break;
       case 'hatch': p.eyes='xd'; p.mouth='xd'; p.tail=wag(2); p.earDrop=0; break;
       case 'wobble':p.wobble=(fr%2)?1:-1; break;
+      case 'tops':  p.shake = (fr%2) ? 2 : -2; p.eyes = 'x'; break;                  // la transformación (a Tops o de vuelta a Spot)
     }
   }
-  // ---- La mancha negra de Spot (de ahí su nombre): chiquita, viaja por todo el cuerpo (panza, cola, cabeza) según lo que
-  // siente y, cuando amerita, se DIVIDE en dos y se vuelve cejas de enojo.
-  const zone = { belly:[37,46], tail:[50+p.tail,45], head:[32,21.5], low:[35,50.5] };
-  // TAMAÑO: es un puntito (rx 1.35 × ry 1.05) y NUNCA pasa de 2.1 × 1.6, que era su tamaño "normal" antes (Juan: "máximo como está ahora")
-  let tg = { x:37, y:46, rx:1.35, ry:1.05, brow:0, jx:0, jy:0 };
+  // ---- La mancha negra de Spot (de ahí su nombre). Es un PUNTITO y se mueve de forma ALEATORIA por todo su cuerpo: a veces se
+  // queda quieta, a veces se va, a veces rodea por un lado o por el otro; y se enfoca en partes que tengan sentido con lo que
+  // siente (feliz → cola y mejillas, hambre → panza, acariciado → cabeza…). Cuando amerita se DIVIDE en dos y se vuelve
+  // cejas de enojo. Si lo descuidan, CRECE hasta volverlo Tops.
+  if (S.tops) { if (p.eyes === 'xd' || p.eyes === 'happy') p.eyes = 'open'; p.blush = false; p.tongue = false; }     // Tops no tiene boca ni se ríe
   const Lm = I18N[LANG], lineIdx = Math.floor(now() / 7000);
   // Spot SOLO se enoja (cejas) cuando NO PUEDE hacer algo: se le escapa la pelota, quiere jugar/dormir y no puede (animación "no"),
   // o intenta acordarse de qué es My Happy Thing ("I forgot what it is…") y no lo logra.
   const forgot = !game && !a && !S.poops && m === 'ok' && (lineIdx % (Lm['say.ok'] || [1]).length) === 1 && (now() % 7000) < 2600;
   const cant = !!(a && a.type === 'no') || !!(g && g.phase === 'result' && g.result === 'miss');
-  if (p.eyes === 'xd')              tg = { x:35, y:49, rx:2.1, ry:1.6, brow:0, jx:Math.sin(t*14)*2, jy:Math.sin(t*18) };           // de risa: se sacude (y crece lo máximo)
-  else if (a && a.type === 'eat')   tg = { x:35, y:48, rx:1.35+((fr%2)?.45:0), ry:1.05+((fr%2)?.3:0), brow:0, jx:0, jy:0 };          // late con cada bocado
-  else if (a && a.type === 'pet')   tg = { x:zone.head[0]+Math.sin(t*9), y:zone.head[1], rx:1.2, ry:1, brow:0, jx:0, jy:0 };         // sube a la cabeza, donde lo acarician
-  else switch (m) {
-    case 'happy':  tg = { x:zone.tail[0], y:zone.tail[1], rx:1.2, ry:1.2, brow:0, jx:0, jy:Math.sin(t*6) * .6 }; break;             // se sube a la colita que mueve
-    case 'hungry': tg = { x:zone.low[0], y:zone.low[1], rx:.95, ry:.7, brow:0, jx:0, jy:0 }; break;                                // se encoge y se hunde
-    case 'sad':    tg = { x:33, y:51, rx:.95, ry:.65, brow:0, jx:0, jy:0 }; break;
-    case 'sleepy': tg = { x:38, y:49, rx:1.2, ry:.9, brow:0, jx:0, jy:0 }; break;
-    case 'sleep':  tg = { x:42, y:49.5, rx:1.3+Math.sin(t*1.8)*.2, ry:1+Math.sin(t*1.8)*.15, brow:0, jx:0, jy:0 }; break;          // hecha bolita en la base de la cola, respira con él
-    case 'sick':   tg = { x:36, y:47, rx:1+Math.sin(t*11)*.25, ry:.8, brow:0, jx:Math.sin(t*9)*1.4, jy:Math.cos(t*7)*1 }; break;     // se marea
-    default: {                                                                                          // tranquilo: pasea (panza → cola → panza → cabeza)
-      const tour = [zone.belly, zone.tail, zone.belly, zone.head][Math.floor(t / 9) % 4];
-      tg = { x:tour[0]+Math.sin(t*1.3)*.8, y:tour[1]+Math.sin(t*2)*.4, rx:1.35, ry:1.05, brow:0, jx:0, jy:0 };
-    }
+  const ctxKey = p.eyes === 'xd' ? 'xd' : (g && g.phase === 'fly') ? 'game' : (a && a.type === 'eat') ? 'eat' : (a && a.type === 'pet') ? 'pet' : m;
+  const wp = wanderPos(t, ctxKey, p.tail);
+  // TAMAÑO: puntito (rx 1.35 × ry 1.05); sin descuido NUNCA pasa de 2.1 × 1.6 (Juan: "máximo como está ahora")
+  let rx = 1.35, ry = 1.05, jx = 0, jy = 0;
+  switch (ctxKey) {
+    case 'xd':     rx = 2.1; ry = 1.6; jx = Math.sin(t*14)*2; jy = Math.sin(t*18); break;                        // de risa: se sacude (y crece lo máximo)
+    case 'eat':    rx += (fr%2) ? .45 : 0; ry += (fr%2) ? .3 : 0; break;                                         // late con cada bocado
+    case 'pet':    rx = 1.2; ry = 1; break;
+    case 'game':   rx = 1.5; ry = 1.15; jx = Math.sin(t*8) * 1.2; break;
+    case 'happy':  rx = 1.2; ry = 1.2; jy = Math.sin(t*6) * .6; break;
+    case 'hungry': rx = .95; ry = .7; break;                                                                      // se encoge
+    case 'sad':    rx = .95; ry = .65; break;
+    case 'sleepy': rx = 1.2; ry = .9; break;
+    case 'sleep':  rx = 1.3 + Math.sin(t*1.8)*.2; ry = 1 + Math.sin(t*1.8)*.15; break;                          // respira con él
+    case 'sick':   rx = 1 + Math.sin(t*11)*.25; ry = .8; jx = Math.sin(t*9) * 1.4; jy = Math.cos(t*7); break;    // se marea
   }
-  tg.brow = (forgot || cant) ? 1 : 0;
-  for (const k of ['x','y','rx','ry','brow']) SPOT[k] += (tg[k] - SPOT[k]) * .22;         // se desliza con suavidad de un lugar a otro
-  p.spot = { x:SPOT.x + tg.jx, y:SPOT.y + tg.jy, rx:SPOT.rx, ry:SPOT.ry, brow:SPOT.brow };
+  // DESCUIDO: la mancha crece y se come el cuerpo (si ya es Tops, en negativo es un puntito blanco)
+  const nz = S.tops ? 0 : Math.min(1, (S.neglect || 0) / 100);
+  const grow = nz < .12 ? 0 : Math.pow((nz - .12) / .88, 1.35) * 27;
+  let gx = wp[0], gy = wp[1];
+  if (grow > 0) { const pull = Math.min(1, grow / 12) * .75; gx += (33 - gx) * pull; gy += (43 - gy) * pull; rx += grow; ry += grow * .85; }
+  SPOT.x += (gx - SPOT.x) * .55; SPOT.y += (gy - SPOT.y) * .55;
+  SPOT.rx += (rx - SPOT.rx) * .25; SPOT.ry += (ry - SPOT.ry) * .25;
+  SPOT.brow += (((forgot || cant) ? 1 : 0) - SPOT.brow) * .22;
+  p.spot = { x:SPOT.x + jx, y:SPOT.y + jy, rx:SPOT.rx, ry:SPOT.ry, brow:SPOT.brow };
   if (p.eyes === 'xd') p.jump = Math.max(p.jump || 0, (fr%2) ? 1 : 0);                                          // la risa lo hace rebotar
   return p;
 }
 const SPOT = { x:37, y:46, rx:1.35, ry:1.05, brow:0 };       // estado suavizado de la mancha
+
+/* Recorrido aleatorio de la mancha. Coordenadas en el espacio "adulto" de Spot (64×64); la cola sigue su meneo. */
+function rnd(a,b){ return a + Math.random() * (b - a); }
+function pickOf(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+const ZONES = {
+  belly:[37,46], chest:[32,42.5], haunchL:[24.5,48.5], haunchR:[40.5,47.5], pawL:[25.5,52.5], pawR:[38.5,52.5],
+  tailBase:[43.5,49.5], tailMid:[47.5,46], tailTip:[50.5,42], forehead:[32,21.5], tuft:[30,14],
+  earL:[11,22.5], earR:[51,18], cheekL:[21,33.5], cheekR:[43,33.5], chin:[32,40.5],
+};
+const MOOD_ZONES = {           // qué partes "tienen sentido" para cada emoción (peso relativo)
+  ok:     { belly:2, chest:1, haunchL:1, haunchR:1, tailBase:1, tailMid:.5, forehead:1, cheekL:1, cheekR:1, pawL:.5, pawR:.5 },
+  happy:  { tailTip:3, tailMid:2, cheekL:1, cheekR:1, earR:1, earL:.5, forehead:1, belly:1 },
+  hungry: { belly:4, chest:1, chin:1, haunchL:.3, haunchR:.3 },
+  sad:    { pawL:1, pawR:1, belly:1, chin:1, haunchL:.5, haunchR:.5 },
+  sleepy: { tailBase:3, haunchR:2, belly:1 },
+  sleep:  { tailBase:4, haunchR:1, belly:1 },
+  sick:   null,                                                   // enfermo: cualquier parte, sin criterio
+  eat:    { chin:3, belly:2, chest:1 },
+  pet:    { forehead:3, earL:1, earR:1, cheekL:1, cheekR:1, tuft:1 },
+  xd:     { cheekL:2, cheekR:2, belly:1, chin:1, tailTip:1 },
+  game:   { forehead:2, earL:1, earR:1, tailTip:1, chest:1 },
+};
+const MOOD_TEMPO = {           // stay = prob. de quedarse quieta; sp = factor de duración (menor = más rápida)
+  ok:{stay:.30,sp:1}, happy:{stay:.18,sp:.8}, hungry:{stay:.35,sp:1.2}, sad:{stay:.45,sp:1.5}, sleepy:{stay:.55,sp:1.6},
+  sleep:{stay:.65,sp:2}, sick:{stay:.08,sp:.55}, eat:{stay:.1,sp:.7}, pet:{stay:.12,sp:.7}, xd:{stay:.05,sp:.45}, game:{stay:.1,sp:.6},
+};
+const WAN = { x:37, y:46, fromX:37, fromY:46, toKey:'belly', offX:0, offY:0, viaX:37, viaY:46, t0:-99, dur:1, hold:0, stay:true, ctx:'' };
+function zonePos(key, tw){
+  if (key === 'tailBase') return [43.5 + tw*.3, 49.5];
+  if (key === 'tailMid')  return [47.5 + tw*.8, 46];
+  if (key === 'tailTip')  return [50.5 + tw, 42];
+  return ZONES[key];
+}
+function wanderPick(t, ctx, tw){
+  const tempo = MOOD_TEMPO[ctx] || MOOD_TEMPO.ok, weights = ctx in MOOD_ZONES ? MOOD_ZONES[ctx] : MOOD_ZONES.ok;
+  WAN.ctx = ctx; WAN.fromX = WAN.x; WAN.fromY = WAN.y; WAN.t0 = t;
+  if (Math.random() < tempo.stay) { WAN.stay = true; WAN.dur = 0; WAN.hold = rnd(.7, 4.2) * tempo.sp; return; }   // se queda quietecita un rato
+  WAN.stay = false;
+  const keys = Object.keys(ZONES); let tot = 0;
+  const ws = keys.map(k => { let w = weights ? (weights[k] || 0) : 1; if (k === WAN.toKey && Math.random() < .85) w = 0; tot += w; return w; });
+  let r = Math.random() * tot, key = WAN.toKey;
+  for (let i = 0; i < keys.length; i++) { r -= ws[i]; if (r <= 0) { key = keys[i]; break; } }
+  WAN.toKey = key; WAN.offX = rnd(-1.4, 1.4); WAN.offY = rnd(-1, 1);
+  const q = Math.random();
+  WAN.dur = (q < .22 ? rnd(.4, .9) : q < .78 ? rnd(1.3, 3.2) : rnd(3.2, 5.6)) * tempo.sp;   // a veces sale disparada, a veces con calma
+  WAN.hold = Math.random() < .5 ? rnd(.2, 2) : 0;
+  const z = zonePos(key, tw), tx = z[0] + WAN.offX, ty = z[1] + WAN.offY;
+  const mx = (WAN.fromX + tx) / 2, my = (WAN.fromY + ty) / 2, dx = tx - WAN.fromX, dy = ty - WAN.fromY, len = Math.hypot(dx, dy) || 1;
+  const bend = Math.random() < .25 ? 0 : rnd(-9, 9);                                         // rodea por un lado, por el otro… o va derechito
+  WAN.viaX = mx - dy / len * bend; WAN.viaY = my + dx / len * bend;
+}
+function wanderPos(t, ctx, tw){
+  if (t - WAN.t0 >= WAN.dur + WAN.hold || (WAN.ctx !== ctx && t - WAN.t0 > .6)) wanderPick(t, ctx, tw);
+  if (WAN.stay) { WAN.x = WAN.fromX + Math.sin(t * 1.7) * .25; WAN.y = WAN.fromY + Math.cos(t * 2.1) * .2; }
+  else {
+    const u = Math.min(1, (t - WAN.t0) / WAN.dur), e = u * u * (3 - 2 * u), z = zonePos(WAN.toKey, tw);
+    const tx = z[0] + WAN.offX, ty = z[1] + WAN.offY, a = (1 - e) * (1 - e), b = 2 * (1 - e) * e, c = e * e;
+    WAN.x = a * WAN.fromX + b * WAN.viaX + c * tx; WAN.y = a * WAN.fromY + b * WAN.viaY + c * ty;
+  }
+  return [WAN.x, WAN.y];
+}
 
 /* ---------- comida: cada una con su propia animación ---------- */
 const F = {
@@ -1475,7 +1599,7 @@ function drawEffects(pal,p,fr,t,st){
   }
   // chispas de plasma que se desprenden de Spot y suben
   if (st!=='egg'){
-    const cols = S.sleeping ? [C.goldHi, col('#9d96e0')] : [col('#ffe9a0'), col('#cdb9ff'), C.white];
+    const cols = S.tops ? [col('#2b2250'), col('#14152b'), col('#4a3f7a')] : S.sleeping ? [C.goldHi, col('#9d96e0')] : [col('#ffe9a0'), col('#cdb9ff'), C.white];
     const amount = S.sleeping ? 3 : 7;
     for (let i=0;i<amount;i++){
       const life = (t*(.35+(i%3)*.08) + i*.37) % 1;
@@ -1712,6 +1836,7 @@ function renderKush(t,fr){
       if (fr !== lastSqueak && fr%3 === 0) { lastSqueak = fr; sfx('squeak'); }
     }
   }
+  glitchOut();
   ctx.putImageData(img,0,0);
   updateHud();
 }
@@ -1726,6 +1851,7 @@ function render(){
   else { drawDog(p,pal,st,fr,t); }
   drawEffects(pal,p,fr,t,st);
   for (let i=0;i<W*W;i++) OUT[i] = LAYER[i] || SCENE[i];
+  glitchOut();
   ctx.putImageData(img,0,0);
   updateHud();
 }
@@ -1737,7 +1863,10 @@ function updateHud(){
   const m = mood(), kush = isKush(), p = pet(), sl = asleepNow(), ready = kush || S.hatched, L = I18N[LANG];
   let line;
   if (game) line = game.say;
-  else if (kush) {
+  else if (!kush && S.tops) line = '…';                                      // Tops no tiene boca: no habla
+  else if (!kush && (S.neglect || 0) >= 35 && m !== 'sleep' && !(S.poops && (m === 'ok' || m === 'happy'))) {
+    const arr = L['say.grow']; line = arr[Math.floor(t/7000) % arr.length];   // algo le está creciendo…
+  } else if (kush) {
     if (kushIntro) line = '…';
     else if (m === 'ok' || m === 'happy') line = p.poops ? L['kush.say.poop'][0] : L[hearingNow() ? 'kush.say.hear' : 'kush.say.see'][0];
     else line = (L['kush.say.'+m] || L['kush.say.hear'])[0];
@@ -1746,6 +1875,7 @@ function updateHud(){
     if (!line) { const arr = L['say.'+m] || L['say.ok']; line = arr[Math.floor(t/7000) % arr.length]; }
   }
   const sayEl = $('#say'); if (sayEl.textContent !== line) sayEl.textContent = line;
+  setGlitch(S.hatched && S.sick ? ((S.neglect || 0) >= 50 ? 2 : 1) : 0);      // Spot enfermo → TODA la app se glitchea (más fuerte si además lo descuidaron)
   for (const k of ['hunger','happy','energy']) {
     const el = document.querySelector(`.bar[data-k=${k}]`);
     el.querySelector('i').style.width = clamp(p[k]) + '%';
@@ -1758,6 +1888,86 @@ function updateHud(){
   $('#bMed').classList.toggle('alert', ready && p.sick);
   $('#bPlay').classList.toggle('alert', ready && !sl && !p.sick && p.happy < 25 && p.energy >= 20);
   $('#bLight').classList.toggle('alert', ready && !kush && !sl && p.energy < 20);
+}
+
+/* =====================================================================
+   GLITCH — cuando Spot está enfermo, TODA la app se descompone (pantalla, carcasa, botones, textos, fondo…).
+   Cosas raras al azar, sin patrón. Respeta "reducir movimiento": sin destellos, solo textos/emojis/colores.
+   ===================================================================== */
+const GL = { level:0, timer:0, lastFlash:0 };
+const REDUCED = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+const GLITCH_CHARS = '▒░▓█▌▐╳#%&@?!¿§Ж҉ǂ';
+function corrupt(s){ let o = ''; for (const ch of s) o += (/\s/.test(ch) || Math.random() > .4) ? ch : pickOf(GLITCH_CHARS); return o; }
+function gTextTargets(){ return [...document.querySelectorAll('#say, .btn i, .foot, .lang button, .bar')].filter(e => e.children.length === 0 || e.matches('.bar')); }
+const GFX = [
+  // la carcasa entera se corre / se inclina
+  () => { const d = $('.device'); d.style.transform = `translate(${rnd(-12,12)}px,${rnd(-6,6)}px) skewX(${rnd(-7,7)}deg)`; setTimeout(() => { d.style.transform = ''; }, rnd(70,280)); },
+  // un pedazo de la app se desliza de lado
+  () => { const e = pickOf([...document.querySelectorAll('.logo, .bezel, .say, .bars, .btns, .langbar, .foot')]); const old = e.style.transform;
+          e.style.transform = `translateX(${rnd(-26,26)}px)`; setTimeout(() => { e.style.transform = old; }, rnd(90,320)); },
+  // aberración cromática (rojo/cian)
+  () => { if (REDUCED) return; document.documentElement.classList.add('g-rgb'); setTimeout(() => document.documentElement.classList.remove('g-rgb'), rnd(120,420)); },
+  // colores que se van de paseo
+  () => { if (REDUCED) return; const h = document.documentElement; h.style.filter = `hue-rotate(${Math.floor(rnd(40,320))}deg) saturate(${rnd(1.3,2.4)})`; setTimeout(() => { h.style.filter = ''; }, rnd(120,360)); },
+  // negativo: muy de vez en cuando y cortísimo (nada de estroboscopio)
+  () => { if (REDUCED || now() - GL.lastFlash < 5000) return; GL.lastFlash = now(); const h = document.documentElement; h.style.filter = 'invert(1)'; setTimeout(() => { h.style.filter = ''; }, rnd(60,120)); },
+  // un texto cualquiera se corrompe
+  () => { const e = pickOf(gTextTargets()); if (!e) return; const tgt = e.matches('.bar') ? e.querySelector('span') : e; if (!tgt) return;
+          const orig = tgt.textContent, bad = corrupt(orig); tgt.textContent = bad;
+          setTimeout(() => { if (tgt.textContent === bad) tgt.textContent = orig; }, rnd(160,700)); },
+  // un emoji de botón cambia por otro
+  () => { const e = pickOf([...document.querySelectorAll('.btn span')]); const orig = e.textContent; const bad = pickOf(['💀','🕳️','❓','☠️','👁','⬛','🚫','…']);
+          e.textContent = bad; setTimeout(() => { if (e.textContent === bad) e.textContent = orig; }, rnd(200,650)); },
+  // un bloque negro / de "ruido" aparece en cualquier lado de la pantalla
+  () => { const b = document.createElement('div'); const w = rnd(30,240), h = rnd(4,60);
+          b.style.cssText = `position:fixed;left:${rnd(0,innerWidth-w)}px;top:${rnd(0,innerHeight-h)}px;width:${w}px;height:${h}px;z-index:90;pointer-events:none;` +
+            (Math.random() < .5 ? 'background:#000' : 'background:repeating-linear-gradient(90deg,#000 0 3px,#f0f 3px 5px,#0ff 5px 8px)');
+          document.body.appendChild(b); setTimeout(() => b.remove(), rnd(60,260)); },
+  // el logo se voltea o se pone de cabeza
+  () => { const l = $('.logo'); l.style.transform = pickOf(['scaleX(-1)','rotate(180deg)','scaleY(-1)','skewX(25deg)']); setTimeout(() => { l.style.transform = ''; }, rnd(150,500)); },
+  // el título de la pestaña también se rompe
+  () => { document.title = corrupt(tr('title')); setTimeout(() => { document.title = tr('title'); }, rnd(300,1200)); },
+  // las barras pegan brincos que no corresponden
+  () => { document.querySelectorAll('.track i').forEach(i => { i.style.width = Math.floor(rnd(0,100)) + '%'; }); },
+  // un botón se encoge o se agranda de golpe
+  () => { const b = pickOf([...document.querySelectorAll('.btn')]); b.style.transform = `scale(${rnd(.7,1.25)}) rotate(${rnd(-8,8)}deg)`; setTimeout(() => { b.style.transform = ''; }, rnd(120,400)); },
+  // el fondo se pinta de un color que no es
+  () => { const bd = document.body, old = bd.style.backgroundColor; bd.style.backgroundImage = 'none'; bd.style.backgroundColor = pickOf(['#10002a','#2a0a1a','#001a14','#1a1a1a']);
+          setTimeout(() => { bd.style.backgroundColor = old; bd.style.backgroundImage = ''; }, rnd(90,330)); },
+];
+function glitchLoop(){
+  GL.timer = 0;
+  if (!GL.level) return;
+  const n = GL.level >= 2 ? 3 : (Math.random() < .35 ? 2 : 1);
+  for (let i = 0; i < n; i++) { try { pickOf(GFX)(); } catch(e){} }
+  GL.timer = setTimeout(glitchLoop, GL.level >= 2 ? rnd(250,1100) : rnd(450,2300));
+}
+function setGlitch(level){
+  if (level === GL.level) return;
+  GL.level = level;
+  document.documentElement.classList.toggle('glitch', level > 0);
+  clearTimeout(GL.timer); GL.timer = 0;
+  if (level > 0) GL.timer = setTimeout(glitchLoop, 400);
+  else { document.documentElement.style.filter = ''; document.title = tr('title'); document.body.style.backgroundColor = ''; document.body.style.backgroundImage = '';
+         document.querySelectorAll('.device, .logo, .bezel, .say, .bars, .btns, .langbar, .foot, .btn').forEach(e => { e.style.transform = ''; }); }
+}
+/* y el lienzo del bicho: bandas de píxeles que se corren, canales rojo/azul intercambiados y píxeles muertos */
+function glitchOut(){
+  if (!GL.level) return;
+  if (Math.random() > (GL.level >= 2 ? .5 : .22)) return;
+  const bands = 1 + Math.floor(Math.random() * (GL.level >= 2 ? 5 : 3));
+  for (let b = 0; b < bands; b++) {
+    const y0 = Math.floor(Math.random() * W), h = 1 + Math.floor(Math.random() * 6), sh = Math.round((Math.random() * 2 - 1) * 10), swap = Math.random() < .4;
+    for (let y = y0; y < Math.min(W, y0 + h); y++) {
+      const row = OUT.slice(y * W, y * W + W);
+      for (let x = 0; x < W; x++) {
+        let c = row[(x - sh + W * 4) % W];
+        if (swap) c = ((c & 0xff00ff00) | ((c & 0xff) << 16) | ((c >> 16) & 0xff)) >>> 0;
+        OUT[y * W + x] = c;
+      }
+    }
+  }
+  if (Math.random() < .1) for (let i = 0; i < W * W; i++) if (Math.random() < .02) OUT[i] = (0xff000000 | ((Math.random() * 0xffffff) | 0)) >>> 0;
 }
 
 /* ---------- arranque ---------- */
