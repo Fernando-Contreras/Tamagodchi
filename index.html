@@ -284,6 +284,8 @@ const POOP_EVERY_MIN = 150;    // minutos despierto entre popós
 const SICK_AFTER_MIN = 120;    // minutos de descuido para enfermarse
 const OFFLINE_FACTOR = 0.5;    // mientras no estás, todo pasa a la mitad de velocidad…
 const OFFLINE_FLOOR = 20;      // …y nunca baja de aquí (Spot se la pasa dormitando en las nubes)
+const AWAY_GRACE_MIN = 180;    // las primeras 3 h sin entrar NO cuentan como descuido…
+const AWAY_NEGLECT_PER_MIN = .12;  // …después sube 0.12/min (7.2 por hora): ~14 h más y Tops se lo come todo (≈17 h sin entrar)
 const STAGE_AT = { spot: 60, dios: 250 };   // devoción para evolucionar
 
 const DOGERHOOD = [                  // (nombre, raza, rol y origen están en I18N: dog.<id>.*)
@@ -520,6 +522,11 @@ function advancePet(p, name, min, away, sl){
     if (p.sickAcc >= SICK_AFTER_MIN) { p.sick = true; p.sickAcc = 0; toast(tr('t.sick', { name })); sfx('no'); }
   }
 }
+function neglectCheck(){                    // cruza los umbrales: Spot → Tops → de vuelta a Spot
+  if (!S.hatched) return;
+  if (!S.tops && S.neglect >= 100) { S.tops = true; startAnim('tops', 1800); sfx('no'); toast(tr('t.toTops')); }
+  else if (S.tops && S.neglect <= 55) { S.tops = false; startAnim('tops', 1800); sfx('fanfare'); toast(tr('t.fromTops')); }
+}
 function advance(min, away){
   if (min <= 0) return;
   if (S.hatched) {
@@ -531,13 +538,13 @@ function advance(min, away){
     if (S.tops) S.hunger = Math.max(S.hunger, 50);                          // Tops no tiene boca: no se le puede dar de comer (ni tiene hambre)
     const crit = S.sick || S.hunger < 15 || S.happy < 15 || S.poops >= 3;
     const fine = !S.sick && S.hunger > 40 && S.happy > 40 && S.poops === 0;
-    if (away) { if (crit) S.neglect = Math.min(90, S.neglect + Math.min(60, min * .25)); }      // ausente: avanza despacio y nunca llega solo a Tops
-    else if (crit) S.neglect = Math.min(100, S.neglect + min);
-    else if (fine) S.neglect = Math.max(0, S.neglect - min * 2);
-    else if (S.tops && S.happy > 50) S.neglect = Math.max(0, S.neglect - min * .5);
-    if (S.sleeping && S.tops) S.neglect = Math.max(0, S.neglect - min);        // dormir lo cura de a poquito
-    if (!S.tops && S.neglect >= 100) { S.tops = true; startAnim('tops', 1800); sfx('no'); toast(tr('t.toTops')); }
-    else if (S.tops && S.neglect <= 55) { S.tops = false; startAnim('tops', 1800); sfx('fanfare'); toast(tr('t.fromTops')); }
+    if (!away) {                                       // jugando: el descuido sube si está mal y baja si está bien…
+      if (crit) S.neglect = Math.min(100, S.neglect + min);
+      else if (fine) S.neglect = Math.max(0, S.neglect - min * 2);
+      else if (S.tops && S.happy > 50) S.neglect = Math.max(0, S.neglect - min * .5);
+      if (S.sleeping && S.tops) S.neglect = Math.max(0, S.neglect - min);        // dormir lo cura de a poquito
+    }                                                   // …y la AUSENCIA se cuenta en tick() con el tiempo real completo
+    neglectCheck();
   }
   advancePet(S.k, 'Kush', min, away, kushAsleep());      // Kush duerme de día (según el reloj)
   // Kush se duerme SOLA cuando le queda poca energía, y no despierta hasta que su barra se llena (sin avisarle a nadie)
@@ -552,8 +559,14 @@ function tick(){
   let raw = (t - S.last) / 60000;
   S.last = t;
   if (raw <= 0) return;
-  const away = raw > 3;
+  const away = raw > 3, rawFull = raw;
   raw = Math.min(raw, 24*60);
+  // AUSENCIA = descuido real, aunque la app esté cerrada: pasado un rato de gracia, la mancha sigue creciendo con el reloj
+  // (se mide con la hora: al volver, se calcula todo lo que pasó). Un día sin entrar → Tops ya se lo comió por completo.
+  if (away && S.hatched) {
+    const beyond = Math.max(0, rawFull - AWAY_GRACE_MIN);
+    if (beyond > 0) S.neglect = Math.min(100, S.neglect + beyond * AWAY_NEGLECT_PER_MIN);
+  }
   if (away && (S.hatched || isKush()) && raw > 10) toast(tr('t.back', { name: petName() }));
   advance(raw * SPEED, away);
   const m = mood();
@@ -1062,12 +1075,17 @@ function flame(cx,base,h,fr,ph){
 }
 
 /* Spot es una llama blanca de plasma: el borde de su pelaje lame hacia arriba y a los lados */
-function invertLayer(){                      // negativo del perro en escala de grises: blanco ↔ negro (sin colores raros)
-  for (let i=0;i<W*W;i++){
-    const c = LAYER[i]; if (!c) continue;
-    const l = (c & 255) * .3 + ((c >> 8) & 255) * .59 + ((c >> 16) & 255) * .11, v = Math.round(255 - l);
-    LAYER[i] = (0xff000000 | (v << 16) | (v << 8) | v) >>> 0;
-  }
+const SPOTM = new Uint32Array(W*W);          // máscara de la mancha
+function invGray(c){                         // negativo en escala de grises: blanco ↔ negro (sin colores raros)
+  const l = (c & 255) * .3 + ((c >> 8) & 255) * .59 + ((c >> 16) & 255) * .11, v = Math.round(255 - l);
+  return (0xff000000 | (v << 16) | (v << 8) | v) >>> 0;
+}
+function invertLayer(){                      // negativo de todo el perro (Tops)
+  for (let i=0;i<W*W;i++){ const c = LAYER[i]; if (c) LAYER[i] = invGray(c); }
+}
+function applySpot(pal){                     // donde la mancha toca al perro, se invierten los colores (menos contorno, llamas y resplandor)
+  const keep = [pal.line, pal.wisp.core, pal.wisp.mid, pal.wisp.tip, pal.glow];
+  for (let i=0;i<W*W;i++) { if (!SPOTM[i]) continue; const c = LAYER[i]; if (c && keep.indexOf(c) < 0) LAYER[i] = invGray(c); }
 }
 function flameEdge(pal,t,flare){
   const n = (a,b) => Math.sin(a*.4+b*9)*.5 + Math.sin(a*.9-b*13)*.3 + Math.sin(a*.17+b*5)*.2;      // -1..1
@@ -1141,7 +1159,9 @@ function drawDog(p,pal,st,fr,t){
   flameEdge(pal,t,fa);                                                        // el pelo de las orillas ondea
   glow(pal,fr);
   if (p.spot) {                                                               // LA MANCHA: de ahí le viene el nombre; se mueve según cómo se siente
-    const q = p.spot, b = q.brow; ONLY = FUR;                                 // (solo se pinta sobre el pelo)
+    // La mancha es una MÁSCARA DE INVERSIÓN: lo que toca se invierte (el pelo blanco se vuelve negro; los ojos oscuros, blancos…).
+    // Aquí solo se dibuja la máscara; se aplica al final de drawDog (applySpot), cuando ya está dibujada la cara.
+    const q = p.spot, b = q.brow; SPOTM.fill(0); T = SPOTM;
     if (b < .04) {                                                            // una sola mancha (un puntito; con los mínimos para que nunca desaparezca)
       const rx = Math.max(q.rx, 1.1), ry = Math.max(q.ry, .9);
       E(q.x,q.y,rx,ry,C.ink);
@@ -1154,7 +1174,7 @@ function drawDog(p,pal,st,fr,t){
         thickLine(X(cx-d), Yh(cy-slope*d), X(cx+d), Yh(cy+slope*d), C.ink, Math.max(1.6, th*s));
       }
     }
-    ONLY = null;
+    T = LAYER;
   }
   // ---- un solo sombreado suave abajo
   ONLY = FUR; E(32,54,13,1.8,FURSH); ONLY = null;
@@ -1201,6 +1221,7 @@ function drawDog(p,pal,st,fr,t){
     sparkle(18,14+((fr>>1)%2),false); sparkle(47,10+((fr>>1)%2),true); sparkle(6,32,false); sparkle(58,30,false);
   }
   if (st==='spot'){ sparkle(16,18+((fr>>1)%2),false); sparkle(50,16,false); }
+  if (p.spot) applySpot(pal);          // la mancha invierte lo que toca (¡también los ojos!)
   if (st==='tops') invertLayer();      // Tops: lo blanco se vuelve negro y lo negro (su puntito) se vuelve blanco
 }
 
