@@ -1189,7 +1189,7 @@ function drawDog(p,pal,st,fr,t){
       const lerp = (a2,b2) => a2 + (b2 - a2) * b;
       for (const sg of [-1, 1]) {
         const cx = lerp(q.x + sg*q.rx*.6, 32 + sg*6.2), cy = lerp(q.y, 24.9);
-        const d = lerp(q.rx*.8, 3.7), slope = .47 * b * -sg, th = lerp(q.ry*2, 2.2);       // izq. baja hacia la nariz, der. igual (espejo)
+        const d = lerp(q.rx*.8, 3.7), slope = .47 * b * -sg, th = lerp(q.ry*2, 2.2 + Math.min(2, q.rx * .35));       // izq. baja hacia la nariz, der. igual (espejo); más enojo = cejas más gruesas
         thickLine(X(cx-d), Yh(cy-slope*d), X(cx+d), Yh(cy+slope*d), C.ink, Math.max(1.6, th*s));
       }
     }
@@ -1372,19 +1372,24 @@ function pose(fr,t){
   const cant = !!(a && a.type === 'no') || !!(g && g.phase === 'result' && g.result === 'miss');
   const ctxKey = p.eyes === 'xd' ? 'xd' : (g && g.phase === 'fly') ? 'game' : (a && a.type === 'eat') ? 'eat' : (a && a.type === 'pet') ? 'pet' : m;
   const wp = wanderPos(t, ctxKey, p.tail);
-  // TAMAÑO: puntito (rx 1.35 × ry 1.05); sin descuido NUNCA pasa de 2.1 × 1.6 (Juan: "máximo como está ahora")
-  let rx = 1.35, ry = 1.05, jx = 0, jy = 0;
-  switch (ctxKey) {
-    case 'xd':     rx = 2.1; ry = 1.6; jx = Math.sin(t*14)*2; jy = Math.sin(t*18); break;                        // de risa: se sacude (y crece lo máximo)
-    case 'eat':    rx += (fr%2) ? .45 : 0; ry += (fr%2) ? .3 : 0; break;                                         // late con cada bocado
-    case 'pet':    rx = 1.2; ry = 1; break;
-    case 'game':   rx = 1.5; ry = 1.15; jx = Math.sin(t*8) * 1.2; break;
-    case 'happy':  rx = 1.2; ry = 1.2; jy = Math.sin(t*6) * .6; break;
-    case 'hungry': rx = .95; ry = .7; break;                                                                      // se encoge
-    case 'sad':    rx = .95; ry = .65; break;
-    case 'sleepy': rx = 1.2; ry = .9; break;
-    case 'sleep':  rx = 1.3 + Math.sin(t*1.8)*.2; ry = 1 + Math.sin(t*1.8)*.15; break;                          // respira con él
-    case 'sick':   rx = 1 + Math.sin(t*11)*.25; ry = .8; jx = Math.sin(t*9) * 1.4; jy = Math.cos(t*7); break;    // se marea
+  // TAMAÑO = ÁNIMO (Juan: "es un indicador directo de sus emociones"): chiquita = feliz (¡pero SIEMPRE queda una manchita!);
+  // más grande = más "podrido": hambre, tristeza, cansancio, enfermedad, popó, empacho, enojo y, sobre todo, descuido.
+  const c01 = v => Math.max(0, Math.min(1, v));
+  let bad = .55 * c01((80 - S.happy) / 80) + .45 * c01((75 - S.hunger) / 75) + .5 * c01((40 - S.energy) / 40)
+          + (S.sick ? .45 : 0) + Math.min(3, S.poops) * .12 + c01((S.over || 0) / 60) * .25;
+  if (S.sleeping) bad *= .6;                       // dormido está más tranquilo
+  if (ctxKey === 'xd') bad = 0;                    // muerto de risa: solo una pizca
+  bad = Math.min(1, bad);
+  SPOT.anger = cant ? 1 : forgot ? Math.max(SPOT.anger, .5) : Math.max(0, SPOT.anger - .02);       // enojo: la mancha se infla de golpe y luego se va desinflando
+  const moodRx = .9 + Math.pow(bad, 1.2) * 6.6 + SPOT.anger * 3.2, moodRy = .75 + Math.pow(bad, 1.2) * 5.2 + SPOT.anger * 2.6;
+  let rx = moodRx, ry = moodRy, jx = 0, jy = 0;
+  switch (ctxKey) {                                // solo detalles de movimiento (el tamaño ya lo decidió el ánimo)
+    case 'xd':     jx = Math.sin(t*14)*2; jy = Math.sin(t*18); break;                                              // de risa: se sacude
+    case 'eat':    rx += (fr%2) ? .35 : 0; ry += (fr%2) ? .25 : 0; break;                                         // late con cada bocado
+    case 'game':   jx = Math.sin(t*8) * 1.2; break;
+    case 'happy':  jy = Math.sin(t*6) * .6; break;
+    case 'sleep':  rx += Math.sin(t*1.8) * .2; ry += Math.sin(t*1.8) * .15; break;                               // respira con él
+    case 'sick':   rx += Math.sin(t*11) * .3; jx = Math.sin(t*9) * 1.4; jy = Math.cos(t*7); break;               // se marea
   }
   // DESCUIDO: la mancha crece y se come el cuerpo (si ya es Tops, en negativo es un puntito blanco)
   const nz = S.tops ? 0 : Math.min(1, (S.neglect || 0) / 100);
@@ -1398,7 +1403,7 @@ function pose(fr,t){
   if (p.eyes === 'xd') p.jump = Math.max(p.jump || 0, (fr%2) ? 1 : 0);                                          // la risa lo hace rebotar
   return p;
 }
-const SPOT = { x:37, y:46, rx:1.35, ry:1.05, brow:0 };       // estado suavizado de la mancha
+const SPOT = { x:37, y:46, rx:.9, ry:.75, brow:0, anger:0 };       // estado suavizado de la mancha
 
 /* Recorrido aleatorio de la mancha. Coordenadas en el espacio "adulto" de Spot (64×64); la cola sigue su meneo. */
 function rnd(a,b){ return a + Math.random() * (b - a); }
