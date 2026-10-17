@@ -1185,9 +1185,10 @@ function drawDog(p,pal,st,fr,t){
   // ---- cara
   const eye=(cx,k,left)=>{
     if (k==='open'||k==='sad'){
-      E(cx,30,2.7,3.4,C.ink,1); R(cx-1.6,27.8,1.6,1.6,C.eyeHi,1); R(cx+.6,31.2,1,1,C.eyeHi2,1);
+      E(cx,30,2.7,3.4,C.ink,1);
+      if (st !== 'tops') { R(cx-1.6,27.8,1.6,1.6,C.eyeHi,1); R(cx+.6,31.2,1,1,C.eyeHi2,1); }        // los brillitos de los ojos (en Tops serían pupilas: él no tiene)
       if (k==='sad'){
-        if (left){ R(cx-3,26.6,2,1,C.ink,1); R(cx-1,25.6,2,1,C.ink,1); R(cx-2,34.4,1,2,C.tear,1); }
+        if (left){ R(cx-3,26.6,2,1,C.ink,1); R(cx-1,25.6,2,1,C.ink,1); if (st !== 'tops') R(cx-2,34.4,1,2,C.tear,1); }
         else     { R(cx+1,26.6,2,1,C.ink,1); R(cx-1,25.6,2,1,C.ink,1); }
       }
     } else if (k==='closed'){ R(cx-2,32,5,1,C.ink,1); R(cx-3,31,1,1,C.ink,1); R(cx+3,31,1,1,C.ink,1); }
@@ -1200,7 +1201,7 @@ function drawDog(p,pal,st,fr,t){
   };
   const lk = p.look || 0;                                  // mirada: 1 casilla hacia donde va la pelota
   eye(26+lk,p.eyes,true); eye(38+lk,p.eyes,false);
-  E(32+lk,33.6,2.4,1.7,C.ink,1); R(31+lk,32.6,1.2,1,C.eyeHi2,1);
+  E(32+lk,33.6,2.4,1.7,C.ink,1); if (st !== 'tops') R(31+lk,32.6,1.2,1,C.eyeHi2,1);
   const mouth=m=>{
     if (m==='smile'){ R(29,36,1,1,C.ink,1); R(30,37,5,1,C.ink,1); R(35,36,1,1,C.ink,1); }
     else if (m==='frown'){ R(29,38,1,1,C.ink,1); R(30,37,5,1,C.ink,1); R(35,38,1,1,C.ink,1); }
@@ -1372,7 +1373,7 @@ function pose(fr,t){
   SPOT.x += (gx - SPOT.x) * .55; SPOT.y += (gy - SPOT.y) * .55;
   SPOT.rx += (rx - SPOT.rx) * .25; SPOT.ry += (ry - SPOT.ry) * .25;
   SPOT.brow += (((forgot || cant) ? 1 : 0) - SPOT.brow) * .22;
-  p.spot = { x:SPOT.x + jx, y:SPOT.y + jy, rx:SPOT.rx, ry:SPOT.ry, brow:SPOT.brow };
+  p.spot = S.tops ? null : { x:SPOT.x + jx, y:SPOT.y + jy, rx:SPOT.rx, ry:SPOT.ry, brow:SPOT.brow };      // Tops NO tiene mancha (ni blanca)
   if (p.eyes === 'xd') p.jump = Math.max(p.jump || 0, (fr%2) ? 1 : 0);                                          // la risa lo hace rebotar
   return p;
 }
