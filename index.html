@@ -1102,9 +1102,16 @@ function invGray(c){                         // negativo en escala de grises: bl
 function invertLayer(){                      // negativo de todo el perro (Tops)
   for (let i=0;i<W*W;i++){ const c = LAYER[i]; if (c) LAYER[i] = invGray(c); }
 }
-function applySpot(pal){                     // donde la mancha toca al perro, se invierten los colores (menos contorno, llamas y resplandor)
+const TOPSB = new Uint32Array(W*W);          // el perro dibujado como Tops (lo que la mancha deja ver)
+/* La mancha REVELA a Tops: dentro de la mancha, el pelaje, los ojos, la nariz y la (falta de) boca de Spot se reemplazan por los de
+   Tops (negro, ojos blancos ovalados sin pupilas, sin boca). No toca el contorno, las llamitas ni el resplandor, para que la silueta no cambie. */
+function drawDog(p,pal,st,fr,t){
+  if (!p.spot || st === 'tops') { paintDog(p,pal,st,fr,t); return; }
+  const pt = Object.assign({}, p, { spot:null, blush:false, tongue:false, eyes:(p.eyes === 'xd' || p.eyes === 'happy') ? 'open' : p.eyes });
+  paintDog(pt,pal,'tops',fr,t); TOPSB.set(LAYER);                       // pasada 1: así se ve Tops
+  paintDog(p,pal,st,fr,t);                                              // pasada 2: Spot (aquí se dibuja la máscara de la mancha)
   const keep = [pal.line, pal.wisp.core, pal.wisp.mid, pal.wisp.tip, pal.glow];
-  for (let i=0;i<W*W;i++) { if (!SPOTM[i]) continue; const c = LAYER[i]; if (c && keep.indexOf(c) < 0) LAYER[i] = invGray(c); }
+  for (let i=0;i<W*W;i++) { if (!SPOTM[i]) continue; const c = LAYER[i]; if (c && TOPSB[i] && keep.indexOf(c) < 0) LAYER[i] = TOPSB[i]; }
 }
 function flameEdge(pal,t,flare){
   const n = (a,b) => Math.sin(a*.4+b*9)*.5 + Math.sin(a*.9-b*13)*.3 + Math.sin(a*.17+b*5)*.2;      // -1..1
@@ -1145,7 +1152,7 @@ function glow(pal,fr){
   for (const i of add) LAYER[i]=pal.glow;
 }
 
-function drawDog(p,pal,st,fr,t){
+function paintDog(p,pal,st,fr,t){
   const s = st==='cachorro' ? .8 : 1, GY=53, jump=p.jump|0, hb=p.headBob|0, sh=p.shake|0;
   const X = x => 32+(x-32)*s+sh;
   const Yb = y => GY-(GY-y)*s-jump;
@@ -1242,7 +1249,6 @@ function drawDog(p,pal,st,fr,t){
     sparkle(18,14+((fr>>1)%2),false); sparkle(47,10+((fr>>1)%2),true); sparkle(6,32,false); sparkle(58,30,false);
   }
   if (st==='spot'){ sparkle(16,18+((fr>>1)%2),false); sparkle(50,16,false); }
-  if (p.spot) applySpot(pal);          // la mancha invierte lo que toca (¡también los ojos!)
   if (st==='tops') invertLayer();      // Tops: lo blanco se vuelve negro y lo negro (su puntito) se vuelve blanco
 }
 
@@ -1370,7 +1376,7 @@ function pose(fr,t){
   // o intenta acordarse de qué es My Happy Thing ("I forgot what it is…") y no lo logra.
   const forgot = !game && !a && !S.poops && m === 'ok' && (lineIdx % (Lm['say.ok'] || [1]).length) === 1 && (now() % 7000) < 2600;
   const cant = !!(a && a.type === 'no') || !!(g && g.phase === 'result' && g.result === 'miss');
-  const ctxKey = p.eyes === 'xd' ? 'xd' : (g && g.phase === 'fly') ? 'game' : (a && a.type === 'eat') ? 'eat' : (a && a.type === 'pet') ? 'pet' : m;
+  const ctxKey = (forgot || cant) ? 'brow' : p.eyes === 'xd' ? 'xd' : (g && g.phase === 'fly') ? 'game' : (a && a.type === 'eat') ? 'eat' : (a && a.type === 'pet') ? 'pet' : m;
   const wp = wanderPos(t, ctxKey, p.tail);
   // TAMAÑO = ÁNIMO (Juan: "es un indicador directo de sus emociones"): chiquita = feliz (¡pero SIEMPRE queda una manchita!);
   // más grande = más "podrido": hambre, tristeza, cansancio, enfermedad, popó, empacho, enojo y, sobre todo, descuido.
@@ -1398,14 +1404,18 @@ function pose(fr,t){
   if (grow > 0) { const pull = Math.min(1, grow / 12) * .75; gx += (33 - gx) * pull; gy += (43 - gy) * pull; rx += grow; ry += grow * .85; }
   SPOT.x += (gx - SPOT.x) * .55; SPOT.y += (gy - SPOT.y) * .55;
   SPOT.rx += (rx - SPOT.rx) * .25; SPOT.ry += (ry - SPOT.ry) * .25;
-  SPOT.brow += (((forgot || cant) ? 1 : 0) - SPOT.brow) * .22;
+  // las cejas: la mancha viaja (por el cuerpo) hasta la frente y SOLO ahí se parte en dos
+  SPOT.brow += ((((forgot || cant) && Math.hypot(SPOT.x - 32, SPOT.y - 21.5) < 5) ? 1 : 0) - SPOT.brow) * .22;
   p.spot = S.tops ? null : { x:SPOT.x + jx, y:SPOT.y + jy, rx:SPOT.rx, ry:SPOT.ry, brow:SPOT.brow };      // Tops NO tiene mancha (ni blanca)
   if (p.eyes === 'xd') p.jump = Math.max(p.jump || 0, (fr%2) ? 1 : 0);                                          // la risa lo hace rebotar
   return p;
 }
 const SPOT = { x:37, y:46, rx:.9, ry:.75, brow:0, anger:0 };       // estado suavizado de la mancha
 
-/* Recorrido aleatorio de la mancha. Coordenadas en el espacio "adulto" de Spot (64×64); la cola sigue su meneo. */
+/* Recorrido de la mancha A TRAVÉS DE SPOT (no de la pantalla): hay un "mapa" de partes del cuerpo conectadas entre sí (EDGES) y la
+   mancha camina por ese mapa, de parte en parte, siguiendo el pelaje (lomo → cola, mejilla → oreja…). Nunca cruza el aire:
+   si va del lomo a la cola, pasa por la base de la cola. El camino se elige al azar (a veces por un lado, a veces por el otro)
+   y a veces se detiene. Coordenadas en el espacio "adulto" de Spot (64×64); la cola sigue su meneo. */
 function rnd(a,b){ return a + Math.random() * (b - a); }
 function pickOf(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
 const ZONES = {
@@ -1413,6 +1423,16 @@ const ZONES = {
   tailBase:[43.5,49.5], tailMid:[47.5,46], tailTip:[50.5,42], forehead:[32,21.5], tuft:[30,14],
   earL:[11,22.5], earR:[51,18], cheekL:[21,33.5], cheekR:[43,33.5], chin:[32,40.5],
 };
+const EDGES = [                       // qué partes están pegadas (por dónde puede caminar la mancha)
+  ['chest','belly'], ['chest','chin'], ['chest','haunchL'], ['chest','haunchR'],
+  ['belly','haunchL'], ['belly','haunchR'], ['belly','pawL'], ['belly','pawR'],
+  ['haunchL','pawL'], ['haunchR','pawR'], ['pawL','pawR'],
+  ['haunchR','tailBase'], ['tailBase','tailMid'], ['tailMid','tailTip'],
+  ['chin','cheekL'], ['chin','cheekR'], ['cheekL','forehead'], ['cheekR','forehead'],
+  ['cheekL','earL'], ['cheekR','earR'], ['forehead','earL'], ['forehead','earR'], ['forehead','tuft'],
+];
+const ADJ = {};
+EDGES.forEach(([a,b]) => { (ADJ[a] = ADJ[a] || []).push(b); (ADJ[b] = ADJ[b] || []).push(a); });
 const MOOD_ZONES = {           // qué partes "tienen sentido" para cada emoción (peso relativo)
   ok:     { belly:2, chest:1, haunchL:1, haunchR:1, tailBase:1, tailMid:.5, forehead:1, cheekL:1, cheekR:1, pawL:.5, pawR:.5 },
   happy:  { tailTip:3, tailMid:2, cheekL:1, cheekR:1, earR:1, earL:.5, forehead:1, belly:1 },
@@ -1425,43 +1445,69 @@ const MOOD_ZONES = {           // qué partes "tienen sentido" para cada emoció
   pet:    { forehead:3, earL:1, earR:1, cheekL:1, cheekR:1, tuft:1 },
   xd:     { cheekL:2, cheekR:2, belly:1, chin:1, tailTip:1 },
   game:   { forehead:2, earL:1, earR:1, tailTip:1, chest:1 },
+  brow:   { forehead:1 },                                         // va a la frente a partirse en cejas
 };
-const MOOD_TEMPO = {           // stay = prob. de quedarse quieta; sp = factor de duración (menor = más rápida)
+const MOOD_TEMPO = {           // stay = prob. de quedarse quieta; sp = factor de duración (menor = más rápida); fast = va disparada
   ok:{stay:.30,sp:1}, happy:{stay:.18,sp:.8}, hungry:{stay:.35,sp:1.2}, sad:{stay:.45,sp:1.5}, sleepy:{stay:.55,sp:1.6},
   sleep:{stay:.65,sp:2}, sick:{stay:.08,sp:.55}, eat:{stay:.1,sp:.7}, pet:{stay:.12,sp:.7}, xd:{stay:.05,sp:.45}, game:{stay:.1,sp:.6},
+  brow:{stay:0,sp:1,fast:true},
 };
-const WAN = { x:37, y:46, fromX:37, fromY:46, toKey:'belly', offX:0, offY:0, viaX:37, viaY:46, t0:-99, dur:1, hold:0, stay:true, ctx:'' };
+const WAN = { x:37, y:46, sx:37, sy:46, keys:['belly'], toKey:'belly', t0:-99, dur:1, hold:0, stay:true, ctx:'' };
 function zonePos(key, tw){
   if (key === 'tailBase') return [43.5 + tw*.3, 49.5];
   if (key === 'tailMid')  return [47.5 + tw*.8, 46];
   if (key === 'tailTip')  return [50.5 + tw, 42];
   return ZONES[key];
 }
+function nearestZone(x, y, tw){
+  let best = 'belly', bd = Infinity;
+  for (const k in ZONES) { const z = zonePos(k, tw), d = Math.hypot(z[0] - x, z[1] - y); if (d < bd) { bd = d; best = k; } }
+  return best;
+}
+/* camino más corto por el mapa del cuerpo, pero con "ruido" en cada tramo: por eso a veces va por un lado y a veces por el otro */
+function routeTo(from, to, tw){
+  const dist = {}, prev = {}, todo = new Set(Object.keys(ZONES)), noise = {};
+  for (const k of todo) dist[k] = Infinity;
+  dist[from] = 0;
+  const cost = (a, b) => { const key = a < b ? a + '|' + b : b + '|' + a; if (!(key in noise)) { const pa = zonePos(a, tw), pb = zonePos(b, tw); noise[key] = Math.hypot(pa[0]-pb[0], pa[1]-pb[1]) * rnd(.7, 1.7); } return noise[key]; };
+  while (todo.size) {
+    let u = null; for (const k of todo) if (u === null || dist[k] < dist[u]) u = k;
+    todo.delete(u); if (u === to || dist[u] === Infinity) break;
+    for (const v of ADJ[u]) { const alt = dist[u] + cost(u, v); if (alt < dist[v]) { dist[v] = alt; prev[v] = u; } }
+  }
+  const path = []; for (let c = to; c !== undefined; c = prev[c]) path.unshift(c);
+  return path[0] === from ? path : [from, to];
+}
+const wanderPts = tw => [[WAN.sx, WAN.sy]].concat(WAN.keys.map(k => zonePos(k, tw)));
+const polyLen = pts => { let L = 0; for (let i = 0; i < pts.length - 1; i++) L += Math.hypot(pts[i+1][0] - pts[i][0], pts[i+1][1] - pts[i][1]); return L; };
 function wanderPick(t, ctx, tw){
   const tempo = MOOD_TEMPO[ctx] || MOOD_TEMPO.ok, weights = ctx in MOOD_ZONES ? MOOD_ZONES[ctx] : MOOD_ZONES.ok;
-  WAN.ctx = ctx; WAN.fromX = WAN.x; WAN.fromY = WAN.y; WAN.t0 = t;
-  if (Math.random() < tempo.stay) { WAN.stay = true; WAN.dur = 0; WAN.hold = rnd(.7, 4.2) * tempo.sp; return; }   // se queda quietecita un rato
+  WAN.ctx = ctx; WAN.sx = WAN.x; WAN.sy = WAN.y; WAN.t0 = t;
+  if (Math.random() < tempo.stay) { WAN.stay = true; WAN.dur = 0; WAN.hold = rnd(.7, 4.2) * tempo.sp; return; }       // se queda quietecita un rato
   WAN.stay = false;
   const keys = Object.keys(ZONES); let tot = 0;
-  const ws = keys.map(k => { let w = weights ? (weights[k] || 0) : 1; if (k === WAN.toKey && Math.random() < .85) w = 0; tot += w; return w; });
+  const ws = keys.map(k => { let w = weights ? (weights[k] || 0) : 1; if (k === WAN.toKey && Math.random() < .85 && !tempo.fast) w = 0; tot += w; return w; });
   let r = Math.random() * tot, key = WAN.toKey;
   for (let i = 0; i < keys.length; i++) { r -= ws[i]; if (r <= 0) { key = keys[i]; break; } }
-  WAN.toKey = key; WAN.offX = rnd(-1.4, 1.4); WAN.offY = rnd(-1, 1);
-  const q = Math.random();
-  WAN.dur = (q < .22 ? rnd(.4, .9) : q < .78 ? rnd(1.3, 3.2) : rnd(3.2, 5.6)) * tempo.sp;   // a veces sale disparada, a veces con calma
-  WAN.hold = Math.random() < .5 ? rnd(.2, 2) : 0;
-  const z = zonePos(key, tw), tx = z[0] + WAN.offX, ty = z[1] + WAN.offY;
-  const mx = (WAN.fromX + tx) / 2, my = (WAN.fromY + ty) / 2, dx = tx - WAN.fromX, dy = ty - WAN.fromY, len = Math.hypot(dx, dy) || 1;
-  const bend = Math.random() < .25 ? 0 : rnd(-9, 9);                                         // rodea por un lado, por el otro… o va derechito
-  WAN.viaX = mx - dy / len * bend; WAN.viaY = my + dx / len * bend;
+  WAN.toKey = key;
+  WAN.keys = routeTo(nearestZone(WAN.x, WAN.y, tw), key, tw);                                                          // el camino, parte por parte
+  const len = polyLen(wanderPts(tw)), q = Math.random();
+  const speed = tempo.fast ? rnd(55, 80) : q < .2 ? rnd(24, 36) : q < .78 ? rnd(8, 15) : rnd(3.5, 6);                 // px/s: a veces sale disparada, a veces con calma
+  WAN.dur = Math.max(.35, Math.min(10, len / speed)) * (tempo.fast ? 1 : tempo.sp);
+  WAN.hold = (Math.random() < .5 && !tempo.fast) ? rnd(.2, 2) : 0;
 }
 function wanderPos(t, ctx, tw){
   if (t - WAN.t0 >= WAN.dur + WAN.hold || (WAN.ctx !== ctx && t - WAN.t0 > .6)) wanderPick(t, ctx, tw);
-  if (WAN.stay) { WAN.x = WAN.fromX + Math.sin(t * 1.7) * .25; WAN.y = WAN.fromY + Math.cos(t * 2.1) * .2; }
+  if (WAN.stay) { WAN.x = WAN.sx + Math.sin(t * 1.7) * .25; WAN.y = WAN.sy + Math.cos(t * 2.1) * .2; }
   else {
-    const u = Math.min(1, (t - WAN.t0) / WAN.dur), e = u * u * (3 - 2 * u), z = zonePos(WAN.toKey, tw);
-    const tx = z[0] + WAN.offX, ty = z[1] + WAN.offY, a = (1 - e) * (1 - e), b = 2 * (1 - e) * e, c = e * e;
-    WAN.x = a * WAN.fromX + b * WAN.viaX + c * tx; WAN.y = a * WAN.fromY + b * WAN.viaY + c * ty;
+    const pts = wanderPts(tw), u = Math.min(1, (t - WAN.t0) / WAN.dur), e = u * u * (3 - 2 * u);
+    let d = e * polyLen(pts);
+    WAN.x = pts[pts.length - 1][0]; WAN.y = pts[pts.length - 1][1];
+    for (let i = 0; i < pts.length - 1; i++) {                                  // camina por el camino: nunca salta de un lado a otro
+      const L = Math.hypot(pts[i+1][0] - pts[i][0], pts[i+1][1] - pts[i][1]);
+      if (d <= L) { const f = L ? d / L : 1; WAN.x = pts[i][0] + (pts[i+1][0] - pts[i][0]) * f; WAN.y = pts[i][1] + (pts[i+1][1] - pts[i][1]) * f; break; }
+      d -= L;
+    }
   }
   return [WAN.x, WAN.y];
 }
@@ -2046,7 +2092,8 @@ window.addEventListener('pagehide', save);
 render();
 
 window.__tdg = { get S(){ return S; }, advance, tick, render, save, addDevotion, startAnim, mood, stageOf, setChar, startKushIntro, get kushIntro(){ return kushIntro; }, kushAsleep, isNight,
-                 pet, get game(){ return game; }, get anim(){ return A; }, FOODS, feed, gameTap, pounce, setMode };
+                 pet, get game(){ return game; }, get anim(){ return A; }, FOODS, feed, gameTap, pounce, setMode,
+                 EDGES, ZONES, zonePos, get LAYER(){ return LAYER; }, get SPOTM(){ return SPOTM; }, SPOT };
 })();
 </script>
 </body>
