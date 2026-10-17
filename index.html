@@ -31,6 +31,25 @@ body{
   width:100%;padding:14px 12px 30px;display:flex;flex-direction:column;align-items:center;
 }
 .langbar{width:var(--w);display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.lbar-left{display:flex;gap:8px;align-items:center}
+.pillbtn{
+  font:inherit;font-weight:700;font-size:13px;color:var(--ink);background:#fffdf5;border:3px solid var(--ink);border-radius:999px;
+  padding:4px 12px;box-shadow:0 3px 0 var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:4px;
+}
+.pillbtn:active{transform:translateY(3px);box-shadow:none}
+.pillbtn.tool{padding:4px 10px}
+.pillbtn.tool.on{background:var(--gold)}
+.pick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pick button{font:inherit;cursor:pointer;color:var(--ink);background:#fff;border:3px solid var(--ink);border-radius:14px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.pick button b{font-size:16px}.pick button small{font-size:11px;opacity:.7}
+.pick button.on{background:var(--gold)}
+.pick button.soon{background:#e6e1cf;opacity:.7;cursor:default;border-style:dashed}
+#esc{position:fixed;z-index:70;pointer-events:none;image-rendering:pixelated;image-rendering:crisp-edges;transform-origin:center}
+#esc[hidden]{display:none}
+.btn.shake{animation:g-wob .22s linear infinite !important}
+.screen.comb{cursor:none;touch-action:none}
+@keyframes g-wob{0%,100%{translate:0 0;rotate:0deg}25%{translate:-2px 1px;rotate:-3deg}75%{translate:2px -1px;rotate:3deg}}
+.btn.gone{visibility:hidden}
 .lang{display:flex;background:#fffdf5;border:3px solid var(--ink);border-radius:999px;overflow:hidden;box-shadow:0 3px 0 var(--ink)}
 .lang button{font:inherit;font-weight:700;font-size:13px;color:var(--ink);background:transparent;border:0;padding:4px 12px;cursor:pointer}
 .lang button+button{border-left:3px solid var(--ink)}
@@ -203,8 +222,11 @@ html.g-rgb .device,html.g-rgb .logo,html.g-rgb .say,html.g-rgb .foot{filter:drop
 <body>
 <div class="wrap">
   <div class="langbar">
-    <div class="lang" role="group" aria-label="Character / Personaje">
-      <button data-char="spot">Spot</button><button data-char="kush">Kush</button>
+    <div class="lbar-left">
+      <button class="pillbtn" id="bInfo"><span>🐾</span> <i data-i18n="info"></i></button>
+      <button class="pillbtn tool" id="bComb" data-i18n-aria="comb" data-i18n-title="comb" aria-pressed="false">
+        <svg viewBox="0 0 24 14" width="22" height="13" aria-hidden="true"><rect x="1" y="1" width="22" height="4.5" rx="2" fill="currentColor"/><g fill="currentColor"><rect x="3" y="5.5" width="1.6" height="7.5" rx=".8"/><rect x="6.6" y="5.5" width="1.6" height="7.5" rx=".8"/><rect x="10.2" y="5.5" width="1.6" height="7.5" rx=".8"/><rect x="13.8" y="5.5" width="1.6" height="7.5" rx=".8"/><rect x="17.4" y="5.5" width="1.6" height="7.5" rx=".8"/><rect x="21" y="5.5" width="1.6" height="7.5" rx=".8"/></g></svg>
+      </button>
     </div>
     <div class="lang" role="group" aria-label="Language / Idioma">
       <button data-lang="en">EN</button><button data-lang="es">MX</button>
@@ -239,7 +261,7 @@ html.g-rgb .device,html.g-rgb .logo,html.g-rgb .say,html.g-rgb .foot{filter:drop
       <button class="btn" id="bLight"><span>💡</span><i data-i18n="light"></i></button>
       <button class="btn" id="bClean"><span>🧼</span><i data-i18n="clean"></i></button>
       <button class="btn" id="bMed"><span>💊</span><i data-i18n="med"></i></button>
-      <button class="btn" id="bInfo"><span>🐾</span><i data-i18n="info"></i></button>
+      <button class="btn" id="bScold"><span>☝️</span><i data-i18n="scold"></i></button>
     </div>
   </div>
   <div class="foot" data-i18n="foot"></div>
@@ -258,15 +280,23 @@ html.g-rgb .device,html.g-rgb .logo,html.g-rgb .say,html.g-rgb .foot{filter:drop
     <div class="devo"><span id="dLabel"></span><span id="dNum"></span></div>
     <div class="devo-track"><i id="dFill"></i></div>
     <div class="note" data-i18n="note"></div>
+    <h3 data-i18n="whoH"></h3>
+    <div class="pick" id="mPick">
+      <button data-char="spot"><b>Spot</b><small data-i18n="pick.dog"></small></button>
+      <button data-char="kush"><b>Kush</b><small data-i18n="pick.cat"></small></button>
+      <button class="soon" disabled><b>Lawr</b><small data-i18n="pick.soon"></small></button>
+    </div>
     <h3 data-i18n="dogerhoodH"></h3>
     <div class="grid" id="mGrid"></div>
     <div class="opts">
+      <button id="mCalm"></button>
       <button id="mSound"></button>
       <button id="mReset" class="danger" data-i18n="reset"></button>
     </div>
   </div>
 </div>
 
+<canvas id="esc" width="64" height="64" hidden aria-hidden="true"></canvas>   <!-- Spot "fuera" del aparato cuando se escapa -->
 <script>
 (() => {
 'use strict';
@@ -322,6 +352,15 @@ const I18N = {
     't.toTops':'⬛ The spot took over everything… this is Tops.', 't.fromTops':'⬜ Spot is back.', 't.topsNoMouth':'Tops has no mouth…',
     'stage.tops':'Tops', 'dev.tops':'Devotion',
     'say.grow':['Something is growing on me…', 'My spot… is it bigger?', "I don't feel like myself…"], 'say.tops':['…'],
+    scold:'No!', comb:'Comb', whoH:"Who's on screen", 'pick.dog':'dog', 'pick.cat':'cat', 'pick.soon':'coming soon',
+    'calm.on':'🌿 Calm mode: on', 'calm.off':'🌿 Calm mode: off',
+    't.scoldGood':'{name} stops… and looks guilty. 🥺', 't.scoldUnjust':"{name} doesn't understand why. 🥺",
+    't.scoldKush':'…I will remember this. 🐈‍⬛', 't.scoldTops':'…', 't.naughtyIgnored':'{name} made a mess… 💩',
+    't.escapedBlock':'Spot is out! Scold him first. ☝️', 't.escapeFall':'💥 Spot knocked the buttons off!', 't.escapeBack':'Spot goes back in… and the buttons are back. ✨',
+    'say.naughty':['Hehe…', 'Nothing to see here.'], 'say.escaped':['Hehe… oops.', 'The buttons were in my way.'],
+    'kush.say.naughty':['I did not do it.'],
+    'say.kushWorry':['Is Kush okay…?', "Kush doesn't look well…"], 't.spotWorried':'Spot is worried about Kush… 🥺',
+    't.combOuch':'Ouch! Gently…', 't.combHiss':'Kush hisses. 🐈‍⬛', 'comb.hint':'Drag gently over {name}… 🪮',
     't.wish':'🌠 Spot made a wish… My Happy Thing?', 't.stuffed':'😵 {name} is stuffed…', 't.overSick':'🤢 {name} ate way too much and got sick', 't.poopNow':'💩 Oops… {name} had to go',
     // comida
     'feed.title':'What shall we feed?', cancel:'Cancel',
@@ -396,6 +435,15 @@ const I18N = {
     't.toTops':'⬛ La mancha se lo comió todo… ahora es Tops.', 't.fromTops':'⬜ Spot volvió.', 't.topsNoMouth':'Tops no tiene boca…',
     'stage.tops':'Tops', 'dev.tops':'Devoción',
     'say.grow':['Algo me está creciendo…', 'Mi mancha… ¿es más grande?', 'No me siento yo…'], 'say.tops':['…'],
+    scold:'¡No!', comb:'Peine', whoH:'¿Quién está en pantalla?', 'pick.dog':'perro', 'pick.cat':'gato', 'pick.soon':'próximamente',
+    'calm.on':'🌿 Modo calmado: sí', 'calm.off':'🌿 Modo calmado: no',
+    't.scoldGood':'{name} se detiene… y pone cara de culpa. 🥺', 't.scoldUnjust':'{name} no entiende por qué. 🥺',
+    't.scoldKush':'…Lo recordaré. 🐈‍⬛', 't.scoldTops':'…', 't.naughtyIgnored':'{name} hizo un desastre… 💩',
+    't.escapedBlock':'¡Spot se salió! Regáñalo primero. ☝️', 't.escapeFall':'💥 ¡Spot tiró los botones!', 't.escapeBack':'Spot regresa… y los botones vuelven a su lugar. ✨',
+    'say.naughty':['Jeje…', 'Aquí no pasa nada.'], 'say.escaped':['Jeje… upss.', 'Los botones me estorbaban.'],
+    'kush.say.naughty':['Yo no fui.'],
+    'say.kushWorry':['¿Kush está bien…?', 'Kush no se ve bien…'], 't.spotWorried':'Spot está preocupado por Kush… 🥺',
+    't.combOuch':'¡Auch! Con cuidado…', 't.combHiss':'Kush bufa. 🐈‍⬛', 'comb.hint':'Arrastra con suavidad sobre {name}… 🪮',
     't.wish':'🌠 Spot pidió un deseo… ¿My Happy Thing?', 't.stuffed':'😵 {name} está empachado…', 't.overSick':'🤢 {name} comió demasiado y se enfermó', 't.poopNow':'💩 Uy… {name} tuvo que ir',
     'feed.title':'¿Qué le damos?', cancel:'Cancelar',
     'food.kibble':'Croquetas', 'food.kibble.sub':'llenan',
@@ -546,7 +594,8 @@ function advance(min, away){
     const fine = !S.sick && S.hunger > 40 && S.happy > 40 && S.poops === 0;
     if (!away) {                                       // jugando: el descuido sube si está mal y baja si está bien…
       if (crit) S.neglect = Math.min(100, S.neglect + min);
-      else if (fine) S.neglect = Math.max(0, S.neglect - min * 2);
+      else if (fine && !kushCrit()) S.neglect = Math.max(0, S.neglect - min * 2);
+      if (kushCrit() && !S.tops) S.neglect = Math.min(100, S.neglect + min * .6);     // sus amigos importan: si Kush está mal, a Spot se le va hinchando la preocupación
       else if (S.tops && S.happy > 50) S.neglect = Math.max(0, S.neglect - min * .5);
       if (S.sleeping && S.tops) S.neglect = Math.max(0, S.neglect - min);        // dormir lo cura de a poquito
     }                                                   // …y la AUSENCIA se cuenta en tick() con el tiempo real completo
@@ -611,6 +660,7 @@ function addDevotion(n){
 
 /* ---------- acciones ---------- */
 const guard = () => {
+  if (ESC.stage >= 2 || S.escape) { toast(tr('t.escapedBlock')); return false; }          // Spot está AFUERA: primero hay que regañarlo
   if (!isKush() && !S.hatched) { toast(tr('t.tapEgg')); return false; }
   return true;
 };
@@ -809,7 +859,9 @@ function medicine(){
 }
 let xdCool = 0, petAttendAt = 0;
 function petSpot(){
+  if (comb.on) return;                                         // con el peine en la mano, el toque es del peine
   if (game) return gameTap();
+  if (!isKush() && (ESC.stage >= 2 || S.escape)) return toast(tr('t.escapedBlock'));
   if (isKush()) return petKush();
   if (!S.hatched) {
     S.hatchTaps++; startAnim('wobble', 500); sfx('tap');
@@ -831,7 +883,7 @@ function petSpot(){
 
 /* ---------- UI: panel, toast, modal ---------- */
 const paneEl = $('#pane');
-function showPane(html){ paneEl.innerHTML = html; paneEl.hidden = false; }
+function showPane(html){ if (comb.on) setComb(false); paneEl.innerHTML = html; paneEl.hidden = false; }
 function hidePane(){ paneEl.hidden = true; paneEl.innerHTML = ''; game = null; $('#gameUi').hidden = true; hudAt = 0; }
 paneEl.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || b.disabled) return;
@@ -874,10 +926,13 @@ function openInfo(){
       : `<div class="card locked"><b>???</b><em>${tr('locked', { n: d.at })}</em></div>`;
   }).join('');
   $('#mSound').textContent = tr(S.mute ? 'sound.off' : 'sound.on');
+  $('#mCalm').textContent = tr(S.calm ? 'calm.on' : 'calm.off');
+  syncChars();
   modal.hidden = false;
 }
 $('#mClose').onclick = () => modal.hidden = true;
 modal.addEventListener('click', e => { if (e.target === modal) modal.hidden = true; });
+$('#mCalm').onclick = () => { S.calm = !S.calm; save(); $('#mCalm').textContent = tr(S.calm ? 'calm.on' : 'calm.off'); hudAt = 0; };
 $('#mSound').onclick = () => { S.mute = !S.mute; save(); $('#mSound').textContent = tr(S.mute ? 'sound.off' : 'sound.on'); };
 $('#mReset').onclick = () => {
   if (!confirm(tr('reset.confirm'))) return;
@@ -926,12 +981,16 @@ function syncChars(){
   hudAt = 0;
 }
 function setChar(c){
-  if (c === S.char) return;
+  if (c === S.char) return true;
+  if (ESC.stage || S.escape) { toast(tr('t.escapedBlock')); return false; }            // Spot anda afuera: nadie se va hasta que lo regañen
+  if (comb.on) setComb(false);
+  N = null;
   S.char = c; hidePane(); save();
   if (c === 'kush') startKushIntro(); else kushIntro = null;
   syncChars();
+  return true;
 }
-document.querySelectorAll('[data-char]').forEach(b => { b.onclick = () => setChar(b.dataset.char); });
+document.querySelectorAll('[data-char]').forEach(b => { b.onclick = () => { if (setChar(b.dataset.char)) modal.hidden = true; }; });
 function petKush(){
   if (kushIntro) { kushIntro = null; return; }                 // tocar la pantalla salta la intro
   if (kushAsleep()) { startAnim('kushpeek', 1300); toast(tr('t.kushSleeping')); return; }
@@ -945,6 +1004,8 @@ $('#bLight').onclick = toggleLight;
 $('#bClean').onclick = clean;
 $('#bMed').onclick = medicine;
 $('#bInfo').onclick = openInfo;
+$('#bScold').onclick = () => scold();
+$('#bComb').onclick = () => toggleComb();
 $('#cv').addEventListener('click', petSpot);
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { modal.hidden = true; hidePane(); }
@@ -1365,7 +1426,15 @@ function pose(fr,t){
       case 'wobble':p.wobble=(fr%2)?1:-1; break;
       case 'tops':  p.shake = (fr%2) ? 2 : -2; p.eyes = 'x'; break;                  // la transformación (a Tops o de vuelta a Spot)
       case 'eatlight': p.eyes = 'open'; p.earDrop = 0; p.shake = 0; break;           // Tops absorbiendo la luz
+      case 'sorry': p.eyes = 'sad'; p.mouth = 'frown'; p.earDrop = 3; p.flare *= .6; p.tail = 0; break;               // regañado con razón: pone cara de culpa
+      case 'scolded': p.eyes = 'sad'; p.mouth = 'frown'; p.earDrop = 3; p.flare *= .5; p.shake = (Math.floor(e/110)%2) ? 1 : -1; break;   // regañado SIN razón
+      case 'ouch':  p.eyes = 'x'; p.mouth = 'frown'; p.earDrop = 3; p.shake = (fr%2) ? 2 : -2; break;                  // peinado muy fuerte
+      case 'combed':p.eyes = 'happy'; p.mouth = 'open'; p.tongue = true; p.blush = true; p.tail = wag(2); p.earDrop = 0; break;   // peinado con cariño
     }
+  } else if (N || ESC.stage >= 2) {              // tramando una travesura (o ya afuera): cara de "yo no fui"
+    p.tail = wag(2); p.earDrop = 0;
+    if (ESC.stage >= 2) { p.eyes = 'xd'; p.mouth = 'xd'; p.shake = (fr%2) ? 1 : -1; p.blush = true; }
+    else { p.eyes = 'half'; p.mouth = 'smile'; p.look = (fr % 24 < 12) ? -1 : 1; }
   }
   // ---- La mancha negra de Spot (de ahí su nombre). Es un PUNTITO y se mueve de forma ALEATORIA por todo su cuerpo: a veces se
   // queda quieta, a veces se va, a veces rodea por un lado o por el otro; y se enfoca en partes que tengan sentido con lo que
@@ -1376,14 +1445,14 @@ function pose(fr,t){
   // Spot SOLO se enoja (cejas) cuando NO PUEDE hacer algo: se le escapa la pelota, quiere jugar/dormir y no puede (animación "no"),
   // o intenta acordarse de qué es My Happy Thing ("I forgot what it is…") y no lo logra.
   const forgot = !game && !a && !S.poops && m === 'ok' && (lineIdx % (Lm['say.ok'] || [1]).length) === 1 && (now() % 7000) < 2600;
-  const cant = !!(a && a.type === 'no') || !!(g && g.phase === 'result' && g.result === 'miss');
+  const cant = !!(a && (a.type === 'no' || a.type === 'ouch')) || !!(g && g.phase === 'result' && g.result === 'miss');
   const ctxKey = (forgot || cant) ? 'brow' : p.eyes === 'xd' ? 'xd' : (g && g.phase === 'fly') ? 'game' : (a && a.type === 'eat') ? 'eat' : (a && a.type === 'pet') ? 'pet' : m;
   const wp = wanderPos(t, ctxKey, p.tail);
   // TAMAÑO = ÁNIMO (Juan: "es un indicador directo de sus emociones"): chiquita = feliz (¡pero SIEMPRE queda una manchita!);
   // más grande = más "podrido": hambre, tristeza, cansancio, enfermedad, popó, empacho, enojo y, sobre todo, descuido.
   const c01 = v => Math.max(0, Math.min(1, v));
   let bad = .55 * c01((80 - S.happy) / 80) + .45 * c01((75 - S.hunger) / 75) + .5 * c01((40 - S.energy) / 40)
-          + (S.sick ? .45 : 0) + Math.min(3, S.poops) * .12 + c01((S.over || 0) / 60) * .25;
+          + (S.sick ? .45 : 0) + Math.min(3, S.poops) * .12 + c01((S.over || 0) / 60) * .25 + (kushCrit() ? .3 : 0);       // y se preocupa si su amiga Kush está mal
   if (S.sleeping) bad *= .6;                       // dormido está más tranquilo
   if (ctxKey === 'xd') bad = 0;                    // muerto de risa: solo una pizca
   bad = Math.min(1, bad);
@@ -1697,6 +1766,8 @@ function drawEffects(pal,p,fr,t,st){
   if (p.eyes === 'xd') {                              // destellitos de pura diversión (nada de lágrimas: Spot nunca llora)
     sparkle(17 + (fr%3), 16 + (fr%2)*2, false); sparkle(47 - (fr%3), 14 + ((fr+1)%2)*2, true); sparkle(10, 38, false);
   }
+  if (N && N.kind === 'shoe') { drawShoe(fr); drawBang(); }                  // ¡tiene un zapato! y trama algo
+  else if (N && N.kind === 'escape' && ESC.stage === 1) drawBang();          // se prepara para salirse del aparato
   if (a){
     const e = now() - a.t0;
     if (a.type==='eat') drawFood(a,e,fr,33,38);
@@ -1808,6 +1879,7 @@ function kushPose(fr,t){
     const jt = now() - g.pounce.t0;
     if (jt >= 0 && jt < 420) { const s = Math.sin(Math.PI * jt / 420); p.dx = (g.pounce.zone - 1) * 10 * s; p.dy = -6 * s; p.eyes = 'open'; p.ears = 'flat'; p.mouth = 'open'; }
   }
+  if (!a && N && N.kind === 'cup') { p.eyes = 'open'; p.ears = 'flat'; p.mouth = 'w'; p.tail = [0,2,0,2][fr%4]; }   // mirando la taza al borde de la mesa…
   if (a) {
     const e = now() - a.t0;
     if (a.type === 'kushpeek') p.peek = true;
@@ -1816,6 +1888,9 @@ function kushPose(fr,t){
     if (a.type === 'clean') { p.eyes = 'happy'; p.tail = [0,2,0,2][fr%4]; }
     if (a.type === 'med') p.eyes = 'closed';
     if (a.type === 'no') p.shake = (Math.floor(e/90)%2) ? 1 : -1;
+    if (a.type === 'sorry' || a.type === 'scolded') { p.eyes = 'closed'; p.ears = 'flat'; p.shake = a.type === 'scolded' ? ((Math.floor(e/110)%2) ? 1 : -1) : 0; }
+    if (a.type === 'ouch') { p.eyes = 'closed'; p.ears = 'flat'; p.mouth = 'open'; p.shake = (fr%2) ? 2 : -2; }
+    if (a.type === 'combed') { p.eyes = 'happy'; p.tail = [0,2,0,2][fr%4]; p.ears = 'norm'; }
     if (a.type === 'eat') {
       const q = eatPose(a, e, fr);
       p.eyes = q.eyes === 'xd' ? 'happy' : q.eyes; p.mouth = q.mouth === 'smile' ? 'w' : q.mouth; p.ears = 'norm';
@@ -1953,9 +2028,11 @@ function renderKush(t,fr){
     if (!pr.done && pr.type === 'see' && g.mode === 'see') drawMouse(x + Math.round(Math.sin((now()-pr.t0)/110)), 50, fr);
     if (pr.done && pr.caught && now() - pr.endAt < 700) { sparkle(x-3, 46, true); sparkle(x+4, 44, false); }
   }
+  if (N && N.kind === 'cup') { drawCup(); drawBang(); }
   drawHearts();
   if (kushIntro) composeKushIntro(now() - kushIntro.t0, fr);
   else for (let i=0;i<W*W;i++) OUT[i] = LAYER[i] || SCENE[i];
+  if (comb.on && comb.pos && !kushIntro) { T = OUT; drawCombSprite(comb.pos[0], comb.pos[1]); }
   if (g && g.mode === 'hear') {                          // oyendo: el mundo se oscurece y solo se perciben las ondas
     dimFrame(.42); T = OUT;
     if (g.prey && !g.prey.done && g.prey.type === 'hear') {
@@ -1978,7 +2055,9 @@ function render(){
   if (st==='egg') { drawEgg(p,pal); }
   else { drawDog(p,pal,st,fr,t); }
   drawEffects(pal,p,fr,t,st);
+  if (ESC.stage >= 2) { drawEscape(); LAYER.fill(0); }          // Spot ya no está en la pantalla: su dibujo anda por AFUERA del aparato
   for (let i=0;i<W*W;i++) OUT[i] = LAYER[i] || SCENE[i];
+  if (comb.on && comb.pos && st !== 'egg') { T = OUT; drawCombSprite(comb.pos[0], comb.pos[1]); }
   glitchOut();
   ctx.putImageData(img,0,0);
   updateHud();
@@ -1989,8 +2068,12 @@ let hudAt = 0;
 function updateHud(){
   const t = now(); if (t - hudAt < 250) return; hudAt = t;
   const m = mood(), kush = isKush(), p = pet(), sl = asleepNow(), ready = kush || S.hatched, L = I18N[LANG];
+  naughtyStep(); maybeNaughty();
+  const kc = kushCrit(); if (kc && !lastKC && S.hatched && !S.tops) toast(tr('t.spotWorried')); lastKC = kc;
   let line;
   if (game) line = game.say;
+  else if (!kush && (ESC.stage >= 2 || S.escape)) line = L['say.escaped'][Math.floor(t/7000) % L['say.escaped'].length];
+  else if (N) line = kush ? L['kush.say.naughty'][0] : L['say.naughty'][Math.floor(t/4000) % L['say.naughty'].length];
   else if (!kush && S.tops) line = '…';                                      // Tops no tiene boca: no habla
   else if (!kush && (S.neglect || 0) >= 35 && m !== 'sleep' && !(S.poops && (m === 'ok' || m === 'happy'))) {
     const arr = L['say.grow']; line = arr[Math.floor(t/7000) % arr.length];   // algo le está creciendo…
@@ -1999,11 +2082,11 @@ function updateHud(){
     else if (m === 'ok' || m === 'happy') line = p.poops ? L['kush.say.poop'][0] : L[hearingNow() ? 'kush.say.hear' : 'kush.say.see'][0];
     else line = (L['kush.say.'+m] || L['kush.say.hear'])[0];
   } else {
-    if (m==='ok' || m==='happy') line = p.poops ? tr('say.poop')[0] : null;
+    if (m==='ok' || m==='happy') line = p.poops ? tr('say.poop')[0] : kc ? L['say.kushWorry'][Math.floor(t/7000) % L['say.kushWorry'].length] : null;
     if (!line) { const arr = L['say.'+m] || L['say.ok']; line = arr[Math.floor(t/7000) % arr.length]; }
   }
   const sayEl = $('#say'); if (sayEl.textContent !== line) sayEl.textContent = line;
-  setGlitch(S.hatched && S.sick ? ((S.neglect || 0) >= 50 ? 2 : 1) : 0);      // Spot enfermo → TODA la app se glitchea (más fuerte si además lo descuidaron)
+  setGlitch(glitchTarget());      // TODA la app se glitchea según cuánto ha crecido la mancha (y si está enfermo); Tops = a tope
   for (const k of ['hunger','happy','energy']) {
     const el = document.querySelector(`.bar[data-k=${k}]`);
     el.querySelector('i').style.width = clamp(p[k]) + '%';
@@ -2022,7 +2105,7 @@ function updateHud(){
    GLITCH — cuando Spot está enfermo, TODA la app se descompone (pantalla, carcasa, botones, textos, fondo…).
    Cosas raras al azar, sin patrón. Respeta "reducir movimiento": sin destellos, solo textos/emojis/colores.
    ===================================================================== */
-const GL = { level:0, timer:0, lastFlash:0 };
+const GL = { v:0, timer:0, lastFlash:0 };          // v = intensidad continua (0 = nada … 1 = Tops a todo lo que da)
 const REDUCED = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 const GLITCH_CHARS = '▒░▓█▌▐╳#%&@?!¿§Ж҉ǂ';
 function corrupt(s){ let o = ''; for (const ch of s) o += (/\s/.test(ch) || Math.random() > .4) ? ch : pickOf(GLITCH_CHARS); return o; }
@@ -2065,25 +2148,36 @@ const GFX = [
 ];
 function glitchLoop(){
   GL.timer = 0;
-  if (!GL.level) return;
-  const n = GL.level >= 2 ? 3 : (Math.random() < .35 ? 2 : 1);
-  for (let i = 0; i < n; i++) { try { pickOf(GFX)(); } catch(e){} }
-  GL.timer = setTimeout(glitchLoop, GL.level >= 2 ? rnd(250,1100) : rnd(450,2300));
+  if (GL.v <= 0) return;
+  const v = GL.v;
+  if (Math.random() < .3 + v * .7) {                 // con poca intensidad, a veces el "tic" no pasa de largo y se salta
+    const n = 1 + (Math.random() < v * 1.3 ? 1 : 0) + (v > .6 && Math.random() < .6 ? 1 : 0);
+    for (let i = 0; i < n; i++) { try { pickOf(GFX)(); } catch(e){} }
+  }
+  GL.timer = setTimeout(glitchLoop, rnd(700 - 450 * v, 3600 - 2500 * v));
 }
-function setGlitch(level){
-  if (level === GL.level) return;
-  GL.level = level;
-  document.documentElement.classList.toggle('glitch', level > 0);
-  clearTimeout(GL.timer); GL.timer = 0;
-  if (level > 0) GL.timer = setTimeout(glitchLoop, 400);
-  else { document.documentElement.style.filter = ''; document.title = tr('title'); document.body.style.backgroundColor = ''; document.body.style.backgroundImage = '';
-         document.querySelectorAll('.device, .logo, .bezel, .say, .bars, .btns, .langbar, .foot, .btn').forEach(e => { e.style.transform = ''; }); }
+/* v sube y baja con lo que está pasando: enfermo → ~0.4 (0.75 si además lo descuidan) y, sobre todo, la MANCHA: mientras más crece
+   (descuido) más se glitchea TODA la app, hasta Tops (1). El modo calmado (S.calm) lo apaga todo. */
+function glitchTarget(){
+  if (S.calm || !S.hatched) return 0;
+  const nz = Math.min(1, (S.neglect || 0) / 100);
+  let v = S.tops ? 1 : nz < .2 ? 0 : Math.pow((nz - .2) / .8, 1.1) * .9;
+  if (S.sick) v = Math.max(v, nz >= .5 ? .75 : .4);
+  return v;
 }
-/* y el lienzo del bicho: bandas de píxeles que se corren, canales rojo/azul intercambiados y píxeles muertos */
+function setGlitch(v){
+  const was = GL.v > 0; GL.v = v;
+  if (v > 0 && !was) { document.documentElement.classList.add('glitch'); clearTimeout(GL.timer); GL.timer = setTimeout(glitchLoop, 400); }
+  else if (v <= 0 && was) {
+    document.documentElement.classList.remove('glitch'); clearTimeout(GL.timer); GL.timer = 0;
+    document.documentElement.style.filter = ''; document.title = tr('title'); document.body.style.backgroundColor = ''; document.body.style.backgroundImage = '';
+    document.querySelectorAll('.device, .logo, .bezel, .say, .bars, .btns, .langbar, .foot, .btn').forEach(e => { e.style.transform = ''; });
+  }
+}/* y el lienzo del bicho: bandas de píxeles que se corren, canales rojo/azul intercambiados y píxeles muertos */
 function glitchOut(){
-  if (!GL.level) return;
-  if (Math.random() > (GL.level >= 2 ? .5 : .22)) return;
-  const bands = 1 + Math.floor(Math.random() * (GL.level >= 2 ? 5 : 3));
+  if (GL.v <= 0) return;
+  if (Math.random() > .08 + GL.v * .45) return;
+  const bands = 1 + Math.floor(Math.random() * (1 + 4 * GL.v));
   for (let b = 0; b < bands; b++) {
     const y0 = Math.floor(Math.random() * W), h = 1 + Math.floor(Math.random() * 6), sh = Math.round((Math.random() * 2 - 1) * 10), swap = Math.random() < .4;
     for (let y = y0; y < Math.min(W, y0 + h); y++) {
@@ -2098,9 +2192,192 @@ function glitchOut(){
   if (Math.random() < .1) for (let i = 0; i < W * W; i++) if (Math.random() < .02) OUT[i] = (0xff000000 | ((Math.random() * 0xffffff) | 0)) >>> 0;
 }
 
+/* =====================================================================
+   TRAVESURAS Y REGAÑO · PEINE · AMIGOS
+   - De vez en cuando la mascota hace una travesura (Spot: roer un zapato o ¡salirse del aparato y tirar los botones!; Kush: tirar una taza).
+     Regañarla A TIEMPO está bien; regañarla SIN MOTIVO le hace daño (a Spot le infla la mancha → Tops).
+   - Peine: arrastrar suave = gusto; rudo o frotando de lado a lado = se enoja (la mancha crece).
+   - Amigos: si Kush está mal, Spot se preocupa (su descuido sube).
+   ===================================================================== */
+let N = null;                                   // travesura en curso: {kind:'shoe'|'cup'|'escape', t0, dur}
+let nextNaughtyAt = now() + (params.has('naughty') ? 3000 : rnd(4, 9) * 60000);
+let scoldCool = 0, lastKC = false;
+const ESC = { stage:0, t0:0, tb:0 };            // 0 nada · 1 aviso (aún dentro) · 2 afuera, empujando los botones · 3 botones tirados · 4 regresando
+const ESC_WARN = 3500, ESC_OUT = 2200, ESC_FALL_AT = 8500, ESC_BACK = 900;
+const escCv = $('#esc'), escCtx = escCv.getContext('2d'), escImg = escCtx.createImageData(W, W), escOUT = new Uint32Array(escImg.data.buffer);
+const fallBtns = () => [...document.querySelectorAll('.btn')].filter(b => b.id !== 'bScold');     // el botón de regañar NUNCA se cae: es la única forma de arreglarlo
+const kushCrit = () => S.k.sick || S.k.hunger < 15 || S.k.happy < 15 || S.k.poops >= 3;
+
+function naughtyEligible(){
+  if (game || !paneEl.hidden || !modal.hidden || comb.on || N || ESC.stage || S.escape || curAnim() || kushIntro) return false;
+  if (isKush()) return !kushAsleep() && !S.k.sick;
+  return S.hatched && !S.sleeping && !S.sick && !S.tops;
+}
+function maybeNaughty(){
+  if (now() < nextNaughtyAt) return;
+  nextNaughtyAt = now() + (params.has('naughty') ? 12000 : rnd(4, 9) * 60000);          // ?naughty=1|shoe|cup|escape → travesuras seguido (para probar)
+  const want = params.get('naughty');
+  if (naughtyEligible()) startNaughty(['shoe', 'cup', 'escape'].includes(want) ? want : undefined);
+}
+function startNaughty(kind){
+  if (!kind) kind = isKush() ? 'cup' : (Math.random() < .4 ? 'escape' : 'shoe');
+  N = { kind, t0: now(), dur: 8000, char: S.char };
+  if (kind === 'escape') { ESC.stage = 1; ESC.t0 = now(); }
+  sfx('tap'); hudAt = 0;
+}
+function naughtyStep(){                         // se llama seguido (desde updateHud)
+  if (!N) return;
+  if (S.tops && (ESC.stage || S.escape)) return forceClearEscape();                                   // Tops ya se lo comió: nadie lo regaña ni se acomoda nada… salvo los botones
+  if (N.kind !== 'escape' && (N.char !== S.char || asleepNow() || game)) { N = null; return; }        // se cambió de personaje / se durmió: la travesura se cancela
+  if (N.kind === 'escape' && ESC.stage === 1 && (game || S.sleeping)) { forceClearEscape(); return; }
+  const e = now() - N.t0;
+  if (N.kind === 'escape') {
+    if (ESC.stage === 1 && e >= ESC_WARN) { ESC.stage = 2; fallBtns().forEach(b => b.classList.add('shake')); }          // sale y empieza a empujar los botones
+    else if (ESC.stage === 2 && e >= ESC_FALL_AT) { ESC.stage = 3; S.escape = 2; fallButtons(); save(); }                // ¡los tira!
+  } else if (e > N.dur) {                       // nadie lo regañó: hizo un desastre
+    const p = pet(); N = null; p.poops = Math.min(3, p.poops + 1); sfx('no'); toast(tr('t.naughtyIgnored', { name: petName() })); hudAt = 0; save();
+  }
+}
+function fallButtons(instant){
+  const vh = innerHeight, de = document.documentElement;
+  if (instant) { fallBtns().forEach(b => { b.classList.remove('shake'); b.classList.add('gone'); b.disabled = true; }); return; }
+  de.style.overflow = 'hidden';                  // mientras caen, que no aparezcan barras de scroll
+  const ends = fallBtns().map((b, i) => {
+    b.classList.remove('shake'); b.disabled = true;
+    const an = b.animate([{ transform:'none', opacity:1 }, { transform:`translate(${Math.round(rnd(-60,60))}px,${Math.round(vh * 1.3)}px) rotate(${Math.round(rnd(-200,200))}deg)`, opacity:1 }],
+      { duration:1300, delay:i * 110, easing:'cubic-bezier(.55,0,1,.45)', fill:'forwards' });
+    return an.finished.then(() => { b.classList.add('gone'); an.cancel(); }, () => {});
+  });
+  Promise.all(ends).then(() => { de.style.overflow = ''; });
+  sfx('no'); toast(tr('t.escapeFall'));
+}
+function restoreButtons(){
+  document.documentElement.style.overflow = '';
+  fallBtns().forEach((b, i) => {
+    b.getAnimations().forEach(a => a.cancel());
+    const wasOut = b.classList.contains('gone') || b.disabled;
+    b.classList.remove('gone', 'shake'); b.disabled = false;
+    if (wasOut) b.animate([{ transform:`translate(${Math.round(rnd(-40,40))}px,-160px) rotate(${Math.round(rnd(-30,30))}deg)`, opacity:0 }, { transform:'none', opacity:1 }],
+      { duration:750, delay:i * 90, easing:'cubic-bezier(.2,1.5,.4,1)' });                                  // se acomodan con rebote
+  });
+}
+function resolveEscape(){                       // regañaron a Spot: regresa y todo se acomoda
+  const fallen = S.escape === 2 || ESC.stage === 3;
+  restoreButtons();
+  if (ESC.stage >= 2) { ESC.stage = 4; ESC.tb = now(); setTimeout(() => { ESC.stage = 0; escCv.hidden = true; }, ESC_BACK + 60); }
+  else ESC.stage = 0;
+  N = null; S.escape = 0; hudAt = 0;
+  S.happy = clamp(S.happy - 2); gain(3); attend(2); startAnim('sorry', 1800); sfx('happy');
+  toast(tr(fallen ? 't.escapeBack' : 't.scoldGood', { name:'Spot' })); save();
+}
+function forceClearEscape(){ ESC.stage = 0; N = null; S.escape = 0; escCv.hidden = true; restoreButtons(); }
+function drawEscape(){                          // Spot FUERA de la pantalla: su dibujo viaja por encima del aparato hasta los botones
+  for (let i = 0; i < W * W; i++) escOUT[i] = LAYER[i];
+  escCtx.putImageData(escImg, 0, 0);
+  const r = $('#screen').getBoundingClientRect(), b = $('.btns').getBoundingClientRect(), t = now();
+  let u = 0;
+  if (ESC.stage === 2) u = Math.min(1, Math.max(0, (t - ESC.t0 - ESC_WARN) / ESC_OUT));
+  else if (ESC.stage === 3) u = 1;
+  else if (ESC.stage === 4) u = 1 - Math.min(1, (t - ESC.tb) / ESC_BACK);
+  const e = u * u * (3 - 2 * u), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const tx = b.left + b.width * .34, ty = b.top + b.height * .52;                           // se planta donde estaban los botones (el de "¡No!" queda libre)
+  Object.assign(escCv.style, { left:r.left + 'px', top:r.top + 'px', width:r.width + 'px', height:r.height + 'px',
+    transform:`translate(${(tx - cx) * e}px,${(ty - cy) * e}px) scale(${1 - .42 * e}) rotate(${Math.sin(t / 260) * 5 * e}deg)` });
+  escCv.hidden = false;
+}
+
+/* ---------- regañar ---------- */
+function scold(){
+  if (now() < scoldCool) return; scoldCool = now() + 1200;
+  if (ESC.stage === 4) return;                   // ya va de regreso
+  if (S.escape || ESC.stage) return resolveEscape();
+  if (!guard()) return;
+  if (asleepNow()) return toast(trp('t.shh'));
+  if (!isKush() && S.tops) { startAnim('no', 900); return toast(tr('t.scoldTops')); }          // Tops no reacciona
+  const p = pet();
+  if (N) {                                       // había travesura: regaño merecido
+    N = null; startAnim('sorry', 1800); sfx('happy'); p.happy = clamp(p.happy - 2); gain(3); if (!isKush()) attend(2);
+    toast(trp('t.scoldGood')); hudAt = 0; save(); return;
+  }
+  p.happy = clamp(p.happy - 12); sfx('no'); startAnim('scolded', 1600);                          // regaño SIN motivo
+  if (isKush()) { toast(tr('t.scoldKush')); S.neglect = Math.min(100, (S.neglect || 0) + 6); }  // maltratar a su amiga: Spot lo resiente
+  else { toast(tr('t.scoldUnjust', { name:'Spot' })); S.neglect = Math.min(100, (S.neglect || 0) + 14); SPOT.anger = 1; }
+  neglectCheck(); save();
+}
+
+/* ---------- peine ---------- */
+const comb = { on:false, pos:null, last:null, flips:[], dx:0, rough:0, gentleT:0, ouchAt:0 };
+function setComb(on){
+  if (on && (ESC.stage || S.escape)) { toast(tr('t.escapedBlock')); return; }
+  if (on && !isKush() && !S.hatched) { toast(tr('t.tapEgg')); return; }
+  if (on && asleepNow()) { toast(trp('t.shh')); return; }
+  comb.on = on; comb.pos = null; comb.last = null; comb.rough = 0; comb.gentleT = 0; comb.flips = [];
+  if (on) toast(tr('comb.hint', { name: petName() }));
+  $('#bComb').classList.toggle('on', on); $('#bComb').setAttribute('aria-pressed', on); $('#screen').classList.toggle('comb', on);
+  if (on) hidePane();
+  hudAt = 0;
+}
+const toggleComb = () => setComb(!comb.on);
+function combMove(e){
+  if (!comb.on) return;
+  const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * W, y = (e.clientY - r.top) / r.height * W, t = performance.now() / 1000;
+  comb.pos = [x, y];
+  if (e.pointerType === 'mouse' && !(e.buttons & 1)) { comb.last = null; return; }                // con mouse: hay que arrastrar con el botón apretado
+  if (comb.last) {
+    const [lx, ly, lt] = comb.last, dt = Math.max(.008, t - lt);
+    if (dt > .3) { comb.last = [x, y, t]; return; }
+    const dist = Math.hypot(x - lx, y - ly), speed = dist / dt, ix = Math.round(x), iy = Math.round(y);
+    const onFur = ix >= 0 && iy >= 0 && ix < W && iy < W && LAYER[iy * W + ix] !== 0;
+    if (onFur && dist > .2) {
+      const dirX = Math.sign(x - lx);
+      if (dirX && comb.dx && dirX !== comb.dx && speed > 35) comb.flips.push(t);                  // frotar de lado a lado
+      if (dirX) comb.dx = dirX;
+      comb.flips = comb.flips.filter(f => t - f < 1.2);
+      if (speed > 110) comb.rough += dt * .9;                                                       // muy rápido = rudo
+      if (comb.flips.length >= 5) comb.rough += dt * 1.2;
+      if (speed >= 6 && speed <= 55) { comb.rough = Math.max(0, comb.rough - dt * .35); comb.gentleT += dt; }   // suave = gusto
+      if (comb.gentleT >= 1.2) combGentle();
+      if (comb.rough >= 1) combRough();
+    }
+  }
+  comb.last = [x, y, t];
+}
+function combGentle(){
+  comb.gentleT = 0; const p = pet();
+  p.happy = clamp(p.happy + 1.5); if (!isKush()) attend(.7);
+  spawnHearts(1); startAnim('combed', 900);
+}
+function combRough(){
+  comb.rough = .35;
+  if (now() < comb.ouchAt) return; comb.ouchAt = now() + 2500;
+  const p = pet(); startAnim('ouch', 1400); sfx('no'); p.happy = clamp(p.happy - 8);
+  if (isKush()) { toast(tr('t.combHiss')); S.neglect = Math.min(100, (S.neglect || 0) + 4); }
+  else if (!S.tops) { toast(tr('t.combOuch')); S.neglect = Math.min(100, (S.neglect || 0) + 8); SPOT.anger = 1; neglectCheck(); }
+  save();
+}
+function drawCombSprite(x, y){
+  const rows = ['xxxxxxxxxxx','xxxxxxxxxxx','x.x.x.x.x.x','x.x.x.x.x.x','x.x.x.x.x.x'];
+  bmp(rows, Math.round(x) - 4, Math.round(y) - 1, { x:col('#1b2147') });
+  bmp(rows, Math.round(x) - 5, Math.round(y) - 2, { x:col('#ff9a3c') });
+}
+cv.addEventListener('pointermove', combMove);
+cv.addEventListener('pointerdown', e => { if (comb.on) { comb.last = null; combMove(e); } });
+cv.addEventListener('pointerup', () => { comb.last = null; });
+cv.addEventListener('pointerleave', () => { comb.pos = null; comb.last = null; });
+
+/* ---------- dibujitos de las travesuras ---------- */
+function drawBang(){                            // burbuja con "!" : algo está tramando
+  ell(47,11,8,5,C.line); ell(47,11,7,4,C.white);
+  bmp(['.xx.','.xx.','.xx.','.xx.','....','.xx.'], 45, 7, { x:col('#e5383b') });
+}
+function drawShoe(fr){ bmp(['.xxxx....','xxxxxxxx.','xxxxxxxxx','yyyyyyyyy'], 27, 47 + ((fr % 2) ? 0 : 1), { x:col('#8a5a2b'), y:col('#4a3320') }); }
+function drawCup(){ const k = Math.min(1, (now() - N.t0) / N.dur); bmp(['xxxxx.','x...xx','x...x.','xxxxx.'], 36 + Math.round(k * 13), 49, { x:col('#e8e4f5') }); }
+
 /* ---------- arranque ---------- */
 // Atajo para probar (solo afecta TU partida en este navegador): ?tops=1 → Tops ya · ?tops=0 → vuelve a ser Spot
 if (S.hatched && params.has('tops')) { if (params.get('tops') === '0') { S.tops = false; S.neglect = 0; } else { S.tops = true; S.neglect = 100; } }
+if (S.escape === 2 && !S.tops && S.hatched && S.char !== 'kush') { ESC.stage = 3; N = { kind:'escape', t0:now(), dur:0, char:'spot' }; fallButtons(true); }   // si cerraste la app con Spot afuera, sigue afuera y los botones siguen tirados
+else S.escape = 0;
 applyLang();
 if (S.char === 'kush') startKushIntro();     // si te quedaste con Kush, su intro corre cada vez que abres el juego
 syncChars();
@@ -2114,7 +2391,8 @@ render();
 
 window.__tdg = { get S(){ return S; }, advance, tick, render, save, addDevotion, startAnim, mood, stageOf, setChar, startKushIntro, get kushIntro(){ return kushIntro; }, kushAsleep, isNight,
                  pet, get game(){ return game; }, get anim(){ return A; }, FOODS, feed, gameTap, pounce, setMode,
-                 EDGES, ZONES, HIDDEN, WAN, zonePos, get LAYER(){ return LAYER; }, get SPOTM(){ return SPOTM; }, SPOT };
+                 EDGES, ZONES, HIDDEN, WAN, zonePos, get LAYER(){ return LAYER; }, get SPOTM(){ return SPOTM; }, SPOT,
+                 startNaughty, scold, setComb, combMove, ESC, comb, get N(){ return N; }, resolveEscape, kushCrit, glitchTarget, GL, neglectCheck };
 })();
 </script>
 </body>
