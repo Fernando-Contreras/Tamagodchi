@@ -193,6 +193,10 @@ html.glitch body::before{                      /* una franja de "interferencia" 
 @keyframes g-logo{0%,100%{opacity:1;translate:0 0}20%{opacity:.25}21%{opacity:1;translate:5px 0}22%{translate:0 0}70%{opacity:.5;translate:-6px 1px}71%{opacity:1;translate:0 0}}
 @keyframes g-btn{0%,100%{translate:0 0;rotate:0deg}30%{translate:-4px 0}31%{translate:6px 0;rotate:1.5deg}32%{translate:0 0;rotate:0deg}}
 @keyframes g-say{0%,100%{letter-spacing:0}40%{letter-spacing:2px;text-shadow:3px 0 #f0f,-3px 0 #0ff}41%{letter-spacing:0;text-shadow:none}}
+/* Tops se come la luz: TODA la app se oscurece un momento */
+@media (prefers-reduced-motion:no-preference){ html.eatlight{animation:g-dark 3.2s ease-in-out 1} }
+@keyframes g-dark{0%{filter:brightness(1)}15%{filter:brightness(.4)}80%{filter:brightness(.4)}100%{filter:brightness(1)}}
+.row.foods.one{grid-template-columns:1fr}
 html.g-rgb .device,html.g-rgb .logo,html.g-rgb .say,html.g-rgb .foot{filter:drop-shadow(4px 0 #ff2bd6) drop-shadow(-4px 0 #19f5ff)}
 </style>
 </head>
@@ -327,6 +331,7 @@ const I18N = {
     'food.cake':'Cake',       'food.cake.sub':'make a wish!',
     'food.icecream':'Ice cream', 'food.icecream.sub':'brain freeze',
     'food.pizza':'Pizza',     'food.pizza.sub':'catch it!',
+    'food.light':'Light',     'food.light.sub':'his only food',
     'food.tuna':'Tuna',       'food.tuna.sub':'fishy!',
     'food.ham':'Ham',         'food.ham.sub':'tasty',
     'food.shrimp':'Shrimp',   'food.shrimp.sub':'pounce!',
@@ -399,6 +404,7 @@ const I18N = {
     'food.cake':'Pastel',      'food.cake.sub':'¡un deseo!',
     'food.icecream':'Helado',  'food.icecream.sub':'congelante',
     'food.pizza':'Pizza',      'food.pizza.sub':'¡atrápala!',
+    'food.light':'Luz',        'food.light.sub':'lo único que come',
     'food.tuna':'Atún',        'food.tuna.sub':'¡pescado!',
     'food.ham':'Jamón',        'food.ham.sub':'sabroso',
     'food.shrimp':'Camarón',   'food.shrimp.sub':'¡zarpazo!',
@@ -628,7 +634,12 @@ function openFeed(){
   if (!guard()) return;
   const p = pet();
   if (asleepNow()) return toast(trp('t.asleep'));
-  if (!isKush() && S.tops) { startAnim('no', 1100); sfx('no'); return toast(tr('t.topsNoMouth')); }      // Tops no tiene boca
+  if (!isKush() && S.tops) {                         // Tops no tiene boca… pero SE COME LA LUZ: es lo único que come
+    showPane(`<h3>${tr('feed.title')}</h3>
+      <div class="row foods one"><button data-feed="light"><i>💡</i><b>${tr('food.light')}</b><small>${tr('food.light.sub')}</small></button></div>
+      <button class="ghost" data-close>${tr('cancel')}</button>`);
+    return;
+  }
   // Kush NO come si no quiere; Spot, en cambio, come lo que le des (y ya veremos las consecuencias)
   if (isKush() && p.hunger >= 92) { startAnim('no', 900); sfx('no'); return toast(trp('t.notHungry')); }
   showPane(`<h3>${tr('feed.title')}</h3>
@@ -638,6 +649,13 @@ function openFeed(){
 }
 function feed(id){
   hidePane();
+  if (id === 'light') {                              // Tops se come la luz: la pantalla (y la app entera) se va apagando mientras él la absorbe
+    if (!S.tops || isKush()) return;
+    S.happy = clamp(S.happy + 12); attend(6);
+    startAnim('eatlight', 3200); sfx('drain');
+    const h = document.documentElement; h.classList.add('eatlight'); setTimeout(() => h.classList.remove('eatlight'), 3300);
+    save(); return;
+  }
   const F = FOODS.find(f => f.id === id), p = pet();
   if (!F || !F.for.includes(S.char)) return;
   const before = p.hunger, name = petName();
@@ -936,6 +954,7 @@ document.addEventListener('keydown', e => {
 /* ---------- sonido (bips tipo LCD) ---------- */
 let ac = null;
 const SFX = {
+  drain:[[880,.14,'sine'],[700,.16,'sine'],[520,.18,'sine'],[380,.2,'sine'],[260,.3,'sine']],
   mew:[[880,.07,'sine'],[1175,.09,'sine'],[760,.14,'sine']], squeak:[[1500,.04,'sine'],[1900,.05,'sine']],
   tap:[[660,.07]], bark:[[420,.09,'sawtooth'],[300,.12,'sawtooth']], eat:[[500,.06],[620,.06],[500,.06],[620,.06]],
   happy:[[523,.08],[659,.08],[784,.12]], no:[[200,.16],[160,.2]], fanfare:[[523,.1],[659,.1],[784,.1],[1047,.28]],
@@ -1185,7 +1204,8 @@ function drawDog(p,pal,st,fr,t){
   // ---- cara
   const eye=(cx,k,left)=>{
     if (k==='open'||k==='sad'){
-      E(cx,30,2.7,3.4,C.ink,1);
+      if (st === 'tops') E(cx,29.6,1.95,3.9,C.ink,1);                       // los ojos de Tops: más ovalados, un poquito alargados hacia arriba: ( )
+      else E(cx,30,2.7,3.4,C.ink,1);
       if (st !== 'tops') { R(cx-1.6,27.8,1.6,1.6,C.eyeHi,1); R(cx+.6,31.2,1,1,C.eyeHi2,1); }        // los brillitos de los ojos (en Tops serían pupilas: él no tiene)
       if (k==='sad'){
         if (left){ R(cx-3,26.6,2,1,C.ink,1); R(cx-1,25.6,2,1,C.ink,1); if (st !== 'tops') R(cx-2,34.4,1,2,C.tear,1); }
@@ -1337,6 +1357,7 @@ function pose(fr,t){
       case 'hatch': p.eyes='xd'; p.mouth='xd'; p.tail=wag(2); p.earDrop=0; break;
       case 'wobble':p.wobble=(fr%2)?1:-1; break;
       case 'tops':  p.shake = (fr%2) ? 2 : -2; p.eyes = 'x'; break;                  // la transformación (a Tops o de vuelta a Spot)
+      case 'eatlight': p.eyes = 'open'; p.earDrop = 0; p.shake = 0; break;           // Tops absorbiendo la luz
     }
   }
   // ---- La mancha negra de Spot (de ahí su nombre). Es un PUNTITO y se mueve de forma ALEATORIA por todo su cuerpo: a veces se
@@ -1613,6 +1634,14 @@ function drawEffects(pal,p,fr,t,st){
     }
     if (a.type==='clean') fxClean(e);
     if (a.type==='med') fxMed(e);
+    if (a.type==='eatlight') {                                       // motitas de luz que viajan de todos lados hacia su cuerpo y desaparecen en él
+      for (let i = 0; i < 30; i++) {
+        const u = Math.min(1, Math.max(0, (e / a.dur - .06 - i * .018) / .5)); if (u <= 0 || u >= 1) continue;
+        const ang = i * 2.399, sx = 32 + Math.cos(ang) * 44, sy = 30 + Math.sin(ang) * 38, k = u * u * (3 - 2 * u);
+        const x = sx + (33 - sx) * k, y = sy + (40 - sy) * k;
+        put(x, y, i % 3 ? col('#fff6b0') : C.white); if (u > .1) put(x - (33 - sx) * .04, y - (40 - sy) * .04, col('#ffe27a'));
+      }
+    }
     if (a.type==='evolve' || a.type==='hatch'){
       const k = Math.max(0,1-e/(a.type==='hatch'?900:700));
       if (k>0 && a.type==='hatch') { for (let i=0;i<W*W;i++) if (((i%W)+((i/W)|0)+fr)%2===0 || k>.6) LAYER[i]=C.white; }
@@ -1682,6 +1711,10 @@ function shiftLayer(dx,dy){                 // mueve todo el sprite (para los sa
   const src = LAYER.slice(); LAYER.fill(0);
   for (let y=0;y<W;y++) for (let x=0;x<W;x++) { const c = src[y*W+x]; if (!c) continue; const nx=x+dx, ny=y+dy; if (nx>=0&&ny>=0&&nx<W&&ny<W) LAYER[ny*W+nx]=c; }
 }
+function dimBuf(buf,f){
+  for (let i=0;i<buf.length;i++){ const c = buf[i]; buf[i] = ((255<<24) | (((c>>16&255)*f|0)<<16) | (((c>>8&255)*f|0)<<8) | ((c&255)*f|0)) >>> 0; }
+}
+const lightK = (e,ms) => { const u = e / ms; return u < .15 ? 1 - .7 * u / .15 : u < .8 ? .3 : .3 + .7 * ((u - .8) / .2); };    // 1 → 0.3 → (se queda oscuro) → 1
 function dimFrame(f){
   for (let i=0;i<W*W;i++){ const c = OUT[i]; OUT[i] = ((255<<24) | (((c>>16&255)*f|0)<<16) | (((c>>8&255)*f|0)<<8) | ((c&255)*f|0)) >>> 0; }
 }
@@ -1868,6 +1901,7 @@ function render(){
   if (S.char === 'kush') return renderKush(t,fr);
   const st = stageOf(), pal = S.sleeping ? PAL.night : PAL.day;
   drawScene(pal,t,fr,S.sleeping,S.poops);
+  { const a0 = curAnim(); if (a0 && a0.type === 'eatlight') dimBuf(SCENE, lightK(now() - a0.t0, a0.dur)); }      // Tops se come la luz: el escenario se apaga
   const p = pose(fr,t);
   if (st==='egg') { drawEgg(p,pal); }
   else { drawDog(p,pal,st,fr,t); }
@@ -1993,6 +2027,8 @@ function glitchOut(){
 }
 
 /* ---------- arranque ---------- */
+// Atajo para probar (solo afecta TU partida en este navegador): ?tops=1 → Tops ya · ?tops=0 → vuelve a ser Spot
+if (S.hatched && params.has('tops')) { if (params.get('tops') === '0') { S.tops = false; S.neglect = 0; } else { S.tops = true; S.neglect = 100; } }
 applyLang();
 if (S.char === 'kush') startKushIntro();     // si te quedaste con Kush, su intro corre cada vez que abres el juego
 syncChars();
