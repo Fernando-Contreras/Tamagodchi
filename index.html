@@ -213,7 +213,7 @@ html.glitch body::before{                      /* una franja de "interferencia" 
 @keyframes g-btn{0%,100%{translate:0 0;rotate:0deg}30%{translate:-4px 0}31%{translate:6px 0;rotate:1.5deg}32%{translate:0 0;rotate:0deg}}
 @keyframes g-say{0%,100%{letter-spacing:0}40%{letter-spacing:2px;text-shadow:3px 0 #f0f,-3px 0 #0ff}41%{letter-spacing:0;text-shadow:none}}
 /* Tops se come la luz: TODA la app se oscurece un momento */
-@media (prefers-reduced-motion:no-preference){ html.eatlight{animation:g-dark 3.2s ease-in-out 1} }
+#blackout{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:120}
 @keyframes g-dark{0%{filter:brightness(1)}15%{filter:brightness(.4)}80%{filter:brightness(.4)}100%{filter:brightness(1)}}
 .row.foods.one{grid-template-columns:1fr}
 html.g-rgb .device,html.g-rgb .logo,html.g-rgb .say,html.g-rgb .foot{filter:drop-shadow(4px 0 #ff2bd6) drop-shadow(-4px 0 #19f5ff)}
@@ -286,7 +286,7 @@ html.g-rgb .device,html.g-rgb .logo,html.g-rgb .say,html.g-rgb .foot{filter:drop
       <button data-char="kush"><b>Kush</b><small data-i18n="pick.cat"></small></button>
       <button class="soon" disabled><b>Lawr</b><small data-i18n="pick.soon"></small></button>
     </div>
-    <h3 data-i18n="dogerhoodH"></h3>
+    <h3 id="mGridH" data-i18n="dogerhoodH"></h3>
     <div class="grid" id="mGrid"></div>
     <div class="opts">
       <button id="mCalm"></button>
@@ -296,6 +296,7 @@ html.g-rgb .device,html.g-rgb .logo,html.g-rgb .say,html.g-rgb .foot{filter:drop
   </div>
 </div>
 
+<div id="blackout" aria-hidden="true"></div>   <!-- apagón de Tops: se come la luz -->
 <canvas id="esc" width="64" height="64" hidden aria-hidden="true"></canvas>   <!-- Spot "fuera" del aparato cuando se escapa -->
 <script>
 (() => {
@@ -339,23 +340,23 @@ const I18N = {
     foot:'Made by JuanFer',
     'stage.egg':'Cloud egg', 'stage.cachorro':'Cloud pup', 'stage.spot':'Spot', 'stage.dios':'Spot, the Dog God',
     // avisos
-    't.woke':'☀️ Spot woke up', 't.tired':'💤 Spot fell asleep from exhaustion', 't.sick':'🤒 {name} got sick',
+    't.woke':'☀️ {name} woke up', 't.tired':'💤 {name} fell asleep from exhaustion', 't.sick':'🤒 {name} got sick',
     't.back':'Welcome back! {name} missed you 🐾', 't.hungry':'🍗 {name} is hungry', 't.wantsPlay':'🥺 {name} wants to play',
-    't.joined':'🐾 {name} joined the Dogerhood!', 't.evolved':'✨ Spot evolved: {stage}!',
+    't.joined':'🐾 {name} joined the Dogerhood!', 't.evolved':'✨ {name} evolved: {stage}!',
     't.tapEgg':'Tap the egg first 🥚', 't.asleep':'{name} is asleep… 💤', 't.notHungry':"{name} isn't hungry",
     't.cantPlaySick':"{name} doesn't feel well enough to play 🤒", 't.tooTired':'{name} is too tired 💤',
     't.won':'🎉 {w}/5! {name} is thrilled', 't.lost':'{w}/5. Rematch time!',
-    't.goodnight':'💤 Goodnight, Spot', 't.notSleepy':"Spot isn't sleepy", 't.shh':'Shhh… {name} is asleep 💤', 't.shhPet':'Shhh… sleeping 💤',
+    't.goodnight':'💤 Goodnight, {name}', 't.notSleepy':"{name} isn't sleepy", 't.shh':'Shhh… {name} is asleep 💤', 't.shhPet':'Shhh… sleeping 💤',
     't.allClean':'All clean ✨', 't.notSick':"{name} isn't sick 🙂", 't.cured':'💊 {name} is cured!',
     't.born':'🐶 Spot, the Dog God, is born!', 't.newEgg':'🥚 A new cloud egg appeared',
     't.kushSleeping':'Kush is sleeping. Let her be. 💤',
     't.toTops':'⬛ The spot took over everything… this is Tops.', 't.fromTops':'⬜ Spot is back.', 't.topsNoMouth':'Tops has no mouth…',
     'stage.tops':'Tops', 'dev.tops':'Devotion',
     'say.grow':['Something is growing on me…', 'My spot… is it bigger?', "I don't feel like myself…"], 'say.tops':['…'],
-    scold:'No!', comb:'Comb', whoH:"Who's on screen", 'pick.dog':'dog', 'pick.cat':'cat', 'pick.soon':'coming soon',
+    scold:'No!', 'info.cats':'Cats', 'info.heaven':'Heaven', catsH:'The Cats', 'cats.soon':'More cats are coming…', 'cat.kush.breed':'Black cat', 'cat.kush.role':"Spot's divine sister", comb:'Comb', whoH:"Who's on screen", 'pick.dog':'dog', 'pick.cat':'cat', 'pick.soon':'coming soon',
     'calm.on':'🌿 Calm mode: on', 'calm.off':'🌿 Calm mode: off',
     't.scoldGood':'{name} stops… and looks guilty. 🥺', 't.scoldUnjust':"{name} doesn't understand why. 🥺",
-    't.scoldKush':'…I will remember this. 🐈‍⬛', 't.scoldTops':'…', 't.naughtyIgnored':'{name} made a mess… 💩',
+    't.scoldKush':'Kush looks at you. Unbothered. 🐈‍⬛', 't.scoldTops':'…', 't.naughtyIgnored':'{name} made a mess… 💩',
     't.escapedBlock':'Spot is out! Scold him first. ☝️', 't.escapeFall':'💥 Spot knocked the buttons off!', 't.escapeBack':'Spot goes back in… and the buttons are back. ✨',
     'say.naughty':['Hehe…', 'Nothing to see here.'], 'say.escaped':['Hehe… oops.', 'The buttons were in my way.'],
     'kush.say.naughty':['I did not do it.'],
@@ -384,10 +385,10 @@ const I18N = {
     // Dogerhood
     'm.egg':'Cloud egg', 'm.age':'Age: {a}', 'm.notBorn':'Not born yet',
     'dev.egg':'Devotion', 'dev.cachorro':'Devotion → Spot', 'dev.spot':'Devotion → Dog God', 'dev.dios':'Devotion (the whole pack)',
-    note:'Spot is eternal: he never dies. If you neglect him he gets sad or sick, but he always comes back. Devotion grows when you truly take care of him (mashing buttons does nothing).',
+    note:'{name} is eternal: he never dies. If you neglect him he gets sad or sick, but he always comes back. Devotion grows when you truly take care of him (mashing buttons does nothing).',
     dogerhoodH:'The Dogerhood', locked:'Joins at {n} devotion',
     'sound.on':'🔊 Sound on', 'sound.off':'🔇 Sound off', reset:'Reset',
-    'reset.confirm':'Reset everything? Spot will become an egg again and devotion is lost.',
+    'reset.confirm':'Reset everything? {name} will become an egg again and devotion is lost.',
     // frases de Spot
     'say.egg':['Tap the egg to hatch Spot 🥚'],
     'say.hungry':["I'm hungry! 🍗", 'Even gods get hungry…'],
@@ -420,14 +421,14 @@ const I18N = {
     'bar.hunger':'Hambre', 'bar.happy':'Alegría', 'bar.energy':'Energía',
     foot:'Hecho por JuanFer',
     'stage.egg':'Huevo de nube', 'stage.cachorro':'Cachorro de nube', 'stage.spot':'Spot', 'stage.dios':'Spot, el Dios Perro',
-    't.woke':'☀️ Spot se despertó', 't.tired':'💤 Spot se quedó dormido de cansancio', 't.sick':'🤒 {name} se enfermó',
+    't.woke':'☀️ {name} se despertó', 't.tired':'💤 {name} se quedó dormido de cansancio', 't.sick':'🤒 {name} se enfermó',
     't.back':'¡Volviste! {name} te extrañó 🐾', 't.hungry':'🍗 {name} tiene hambre', 't.wantsPlay':'🥺 {name} quiere jugar',
-    't.joined':'🐾 ¡{name} se unió al Dogerhood!', 't.evolved':'✨ ¡Spot evolucionó: {stage}!',
+    't.joined':'🐾 ¡{name} se unió al Dogerhood!', 't.evolved':'✨ ¡{name} evolucionó: {stage}!',
     't.tapEgg':'Primero toca el huevo 🥚', 't.asleep':'{name} está dormido… 💤', 'k.t.asleep':'{name} está dormida… 💤',
     't.notHungry':'{name} no tiene hambre',
     't.cantPlaySick':'{name} no se siente bien para jugar 🤒', 't.tooTired':'{name} está muy cansado 💤', 'k.t.tooTired':'{name} está muy cansada 💤',
     't.won':'🎉 ¡{w}/5! {name} está feliz', 't.lost':'{w}/5. ¡Hay revancha!',
-    't.goodnight':'💤 Buenas noches, Spot', 't.notSleepy':'Spot no tiene sueño',
+    't.goodnight':'💤 Buenas noches, {name}', 't.notSleepy':'{name} no tiene sueño',
     't.shh':'Shhh… {name} está dormido 💤', 'k.t.shh':'Shhh… {name} está dormida 💤', 't.shhPet':'Shhh… duerme 💤',
     't.allClean':'Todo limpio ✨', 't.notSick':'{name} no está enfermo 🙂', 'k.t.notSick':'{name} no está enferma 🙂', 't.cured':'💊 ¡{name} se curó!',
     't.born':'🐶 ¡Nació Spot, el Dios Perro!', 't.newEgg':'🥚 Un nuevo huevo de nube apareció',
@@ -435,16 +436,16 @@ const I18N = {
     't.toTops':'⬛ La mancha se lo comió todo… ahora es Tops.', 't.fromTops':'⬜ Spot volvió.', 't.topsNoMouth':'Tops no tiene boca…',
     'stage.tops':'Tops', 'dev.tops':'Devoción',
     'say.grow':['Algo me está creciendo…', 'Mi mancha… ¿es más grande?', 'No me siento yo…'], 'say.tops':['…'],
-    scold:'¡No!', comb:'Peine', whoH:'¿Quién está en pantalla?', 'pick.dog':'perro', 'pick.cat':'gato', 'pick.soon':'próximamente',
+    scold:'¡No!', 'info.cats':'Gatos', 'info.heaven':'Heaven', catsH:'Los gatos', 'cats.soon':'Pronto llegarán más gatos…', 'cat.kush.breed':'Gata negra', 'cat.kush.role':'Hermana divina de Spot', comb:'Peine', whoH:'¿Quién está en pantalla?', 'pick.dog':'perro', 'pick.cat':'gato', 'pick.soon':'próximamente',
     'calm.on':'🌿 Modo calmado: sí', 'calm.off':'🌿 Modo calmado: no',
     't.scoldGood':'{name} se detiene… y pone cara de culpa. 🥺', 't.scoldUnjust':'{name} no entiende por qué. 🥺',
-    't.scoldKush':'…Lo recordaré. 🐈‍⬛', 't.scoldTops':'…', 't.naughtyIgnored':'{name} hizo un desastre… 💩',
+    't.scoldKush':'Kush te mira. Le da igual. 🐈‍⬛', 't.scoldTops':'…', 't.naughtyIgnored':'{name} hizo un desastre… 💩',
     't.escapedBlock':'¡Spot se salió! Regáñalo primero. ☝️', 't.escapeFall':'💥 ¡Spot tiró los botones!', 't.escapeBack':'Spot regresa… y los botones vuelven a su lugar. ✨',
     'say.naughty':['Jeje…', 'Aquí no pasa nada.'], 'say.escaped':['Jeje… upss.', 'Los botones me estorbaban.'],
     'kush.say.naughty':['Yo no fui.'],
     'say.kushWorry':['¿Kush está bien…?', 'Kush no se ve bien…'], 't.spotWorried':'Spot está preocupado por Kush… 🥺',
     't.combOuch':'¡Auch! Con cuidado…', 't.combHiss':'Kush bufa. 🐈‍⬛', 'comb.hint':'Arrastra con suavidad sobre {name}… 🪮',
-    't.wish':'🌠 Spot pidió un deseo… ¿My Happy Thing?', 't.stuffed':'😵 {name} está empachado…', 't.overSick':'🤢 {name} comió demasiado y se enfermó', 't.poopNow':'💩 Uy… {name} tuvo que ir',
+    't.wish':'🌠 Spot pidió un deseo… ¿Mi Cosa Feliz?', 't.stuffed':'😵 {name} está empachado…', 't.overSick':'🤢 {name} comió demasiado y se enfermó', 't.poopNow':'💩 Uy… {name} tuvo que ir',
     'feed.title':'¿Qué le damos?', cancel:'Cancelar',
     'food.kibble':'Croquetas', 'food.kibble.sub':'llenan',
     'food.chicken':'Pollo',    'food.chicken.sub':'¡rico!',
@@ -464,16 +465,16 @@ const I18N = {
     'kgame.see':'👀 Ver', 'kgame.hear':'👂 Oír',
     'm.egg':'Huevo de nube', 'm.age':'Edad: {a}', 'm.notBorn':'Aún no nace',
     'dev.egg':'Devoción', 'dev.cachorro':'Devoción → Spot', 'dev.spot':'Devoción → Dios Perro', 'dev.dios':'Devoción (toda la manada)',
-    note:'Spot es eterno: nunca muere. Si lo descuidas se pone triste o enfermo, pero siempre vuelve. La devoción crece cuando lo cuidas de verdad (no sirve spamear botones).',
+    note:'{name} es eterno: nunca muere. Si lo descuidas se pone triste o enfermo, pero siempre vuelve. La devoción crece cuando lo cuidas de verdad (no sirve spamear botones).',
     dogerhoodH:'El Dogerhood', locked:'Se une con {n} de devoción',
     'sound.on':'🔊 Sonido encendido', 'sound.off':'🔇 Sonido apagado', reset:'Reiniciar',
-    'reset.confirm':'¿Reiniciar todo? Spot volverá a ser un huevo y se pierde la devoción.',
+    'reset.confirm':'¿Reiniciar todo? {name} volverá a ser un huevo y se pierde la devoción.',
     'say.egg':['Toca el huevo para que nazca Spot 🥚'],
     'say.hungry':['¡Tengo hambre! 🍗', 'Hasta los dioses tienen hambre…'],
-    'say.sad':['Quiero jugar… 🥺', 'Me siento solito', '¿Dónde estará My Happy Thing…?'],
+    'say.sad':['Quiero jugar… 🥺', 'Me siento solito', '¿Dónde estará Mi Cosa Feliz…?'],
     'say.sleepy':['Tengo sueño… 💤'], 'say.sick':['No me siento bien… 🤒'], 'say.sleep':['Zzz… 💤'],
-    'say.happy':['¡Voy a encontrar a My Happy Thing! ✨', 'Ladren por Spot 🐾', '¡Soy feliz! ✨'],
-    'say.ok':['Voy a encontrar a My Happy Thing.', 'No recuerdo qué es. Pero lo voy a encontrar.', '¿Jugamos?', 'Aquí, vigilando las nubes ☁️', '¿Qué era My Happy Thing…?'],
+    'say.happy':['¡Voy a encontrar Mi Cosa Feliz! ✨', 'Ladren por Spot 🐾', '¡Soy feliz! ✨'],
+    'say.ok':['Voy a encontrar Mi Cosa Feliz.', 'No recuerdo qué es. Pero lo voy a encontrar.', '¿Jugamos?', 'Aquí, vigilando las nubes ☁️', '¿Qué era Mi Cosa Feliz…?'],
     'say.poop':['¡Hay popó! 💩'],
     'kush.say.sleep':['Zzz… 🐈‍⬛💤'], 'kush.say.hear':['Lo escucho todo.'], 'kush.say.see':['Lo veo todo.'],
     'kush.say.hungry':['Requiero sustento.'], 'kush.say.sad':['Me aburro. Entreténme.'],
@@ -539,7 +540,8 @@ const stageName = st => tr('stage.'+st);
 /* ---------- Spot y Kush se cuidan igual: todo opera sobre "la mascota en pantalla" ---------- */
 const isKush = () => S.char === 'kush';
 const pet = () => isKush() ? S.k : S;
-const petName = () => isKush() ? 'Kush' : 'Spot';
+const spotName = () => S.tops ? 'Tops' : 'Spot';          // Tops NUNCA se llama Spot en ningún cartel
+const petName = () => isKush() ? 'Kush' : spotName();
 const asleepNow = () => isKush() ? kushAsleep() : S.sleeping;
 // como tr(), pero con {name} y, si existe, la variante con género de Kush (p. ej. "k.t.asleep")
 const trp = (k, v) => {
@@ -584,9 +586,9 @@ function neglectCheck(){                    // cruza los umbrales: Spot → Tops
 function advance(min, away){
   if (min <= 0) return;
   if (S.hatched) {
-    advancePet(S, 'Spot', min, away, S.sleeping);
-    if (S.sleeping && S.energy >= 99) { S.sleeping = false; S.energy = 100; toast(tr('t.woke')); }
-    else if (!S.sleeping && S.energy <= 3 && !away) { S.sleeping = true; toast(tr('t.tired')); }
+    advancePet(S, spotName(), min, away, S.sleeping);
+    if (S.sleeping && S.energy >= 99) { S.sleeping = false; S.energy = 100; toast(tr('t.woke', { name: spotName() })); }
+    else if (!S.sleeping && S.energy <= 3 && !away) { S.sleeping = true; toast(tr('t.tired', { name: spotName() })); }
     S.ageMin += min;
     // ---- Descuido: en vez de morir, su mancha crece y crece hasta volverse Tops. Se recupera atendiéndolo.
     if (S.tops) S.hunger = Math.max(S.hunger, 50);                          // Tops no tiene boca: no se le puede dar de comer (ni tiene hambre)
@@ -655,7 +657,7 @@ function addDevotion(n){
     }
   }
   const after = stageByDev();
-  if (after !== before) { startAnim('evolve', 2600); toast(tr('t.evolved', { stage: stageName(after) })); sfx('fanfare'); }
+  if (after !== before) { startAnim('evolve', 2600); toast(tr('t.evolved', { stage: stageName(after), name: spotName() })); sfx('fanfare'); }
 }
 
 /* ---------- acciones ---------- */
@@ -684,12 +686,7 @@ function openFeed(){
   if (!guard()) return;
   const p = pet();
   if (asleepNow()) return toast(trp('t.asleep'));
-  if (!isKush() && S.tops) {                         // Tops no tiene boca… pero SE COME LA LUZ: es lo único que come
-    showPane(`<h3>${tr('feed.title')}</h3>
-      <div class="row foods one"><button data-feed="light"><i>💡</i><b>${tr('food.light')}</b><small>${tr('food.light.sub')}</small></button></div>
-      <button class="ghost" data-close>${tr('cancel')}</button>`);
-    return;
-  }
+  if (!isKush() && S.tops) return feed('light');     // Tops no tiene boca… pero SE COME LA LUZ: es lo único que come, y no hay que preguntarle nada
   // Kush NO come si no quiere; Spot, en cambio, come lo que le des (y ya veremos las consecuencias)
   if (isKush() && p.hunger >= 92) { startAnim('no', 900); sfx('no'); return toast(trp('t.notHungry')); }
   showPane(`<h3>${tr('feed.title')}</h3>
@@ -697,13 +694,21 @@ function openFeed(){
       `<button data-feed="${f.id}"><i>${f.icon}</i><b>${tr('food.'+f.id)}</b><small>${tr('food.'+f.id+'.sub')}</small></button>`).join('')}
     </div><button class="ghost" data-close>${tr('cancel')}</button>`);
 }
+/* Tops se come la luz: la app ENTERA se va apagando durante 13 s hasta quedar en negro total, aguanta un momento y la luz regresa */
+let blackoutUntil = 0;
+const BLACK_FADE = 13000, BLACK_HOLD = 1500, BLACK_BACK = 1800;
+function lightsOut(){
+  const el = $('#blackout'); blackoutUntil = now() + BLACK_FADE + BLACK_HOLD + BLACK_BACK;
+  el.style.transition = 'none'; el.style.opacity = 0; void el.offsetWidth;
+  el.style.transition = `opacity ${BLACK_FADE}ms ease-in-out`; el.style.opacity = 1;
+  setTimeout(() => { el.style.transition = `opacity ${BLACK_BACK}ms ease-out`; el.style.opacity = 0; }, BLACK_FADE + BLACK_HOLD);
+}
 function feed(id){
   hidePane();
-  if (id === 'light') {                              // Tops se come la luz: la pantalla (y la app entera) se va apagando mientras él la absorbe
-    if (!S.tops || isKush()) return;
+  if (id === 'light') {
+    if (!S.tops || isKush() || now() < blackoutUntil) return;      // (mientras dura el apagón no se le puede dar otra vez)
     S.happy = clamp(S.happy + 12); attend(6);
-    startAnim('eatlight', 3200); sfx('drain');
-    const h = document.documentElement; h.classList.add('eatlight'); setTimeout(() => h.classList.remove('eatlight'), 3300);
+    startAnim('eatlight', 3200); sfx('drain'); lightsOut();
     save(); return;
   }
   const F = FOODS.find(f => f.id === id), p = pet();
@@ -836,9 +841,9 @@ function toggleLight(){
     } else startAnim('kushblink', 700);
     return;
   }
-  if (S.sleeping) { S.sleeping = false; toast(tr('t.woke')); if (S.energy < 40) S.happy = clamp(S.happy - 5); }
-  else if (S.energy >= 85) { startAnim('no', 900); return toast(tr('t.notSleepy')); }
-  else { S.sleeping = true; toast(tr('t.goodnight')); }
+  if (S.sleeping) { S.sleeping = false; toast(tr('t.woke', { name: spotName() })); if (S.energy < 40) S.happy = clamp(S.happy - 5); }
+  else if (S.energy >= 85) { startAnim('no', 900); return toast(tr('t.notSleepy', { name: spotName() })); }
+  else { S.sleeping = true; toast(tr('t.goodnight', { name: spotName() })); }
   hidePane(); save();
 }
 function clean(){
@@ -909,6 +914,19 @@ function nextToast(){
 
 const modal = $('#modal');
 function openInfo(){
+  const kush = isKush();
+  // Con Kush NO salen los perros del Dogerhood: ni su devoción (ella no la tiene) ni su manada; solo los gatos
+  document.querySelectorAll('#modal header img, #modal .devo, #modal .devo-track, #modal .note').forEach(e => { e.style.display = kush ? 'none' : ''; });
+  const gh = $('#mGridH'), gk = kush ? 'catsH' : 'dogerhoodH'; gh.dataset.i18n = gk; gh.textContent = tr(gk);
+  $('#mSound').textContent = tr(S.mute ? 'sound.off' : 'sound.on');
+  $('#mCalm').textContent = tr(S.calm ? 'calm.on' : 'calm.off');
+  syncChars();
+  if (kush) {
+    $('#mName').textContent = 'Kush'; $('#mSub').textContent = tr('cat.kush.breed');
+    $('#mGrid').innerHTML = `<div class="card"><b>Kush</b><em>${tr('cat.kush.breed')}</em>${tr('cat.kush.role')}</div>` +
+                            `<div class="card locked"><b>???</b><em>${tr('cats.soon')}</em></div>`;
+    modal.hidden = false; return;
+  }
   const st = S.hatched ? stageByDev() : 'egg';
   $('#mName').textContent = S.tops ? tr('stage.tops') : S.hatched ? 'Spot' : tr('m.egg');
   const a = Math.floor(S.ageMin), d = Math.floor(a/1440), h = Math.floor((a%1440)/60), mi = a%60;
@@ -935,7 +953,7 @@ modal.addEventListener('click', e => { if (e.target === modal) modal.hidden = tr
 $('#mCalm').onclick = () => { S.calm = !S.calm; save(); $('#mCalm').textContent = tr(S.calm ? 'calm.on' : 'calm.off'); hudAt = 0; };
 $('#mSound').onclick = () => { S.mute = !S.mute; save(); $('#mSound').textContent = tr(S.mute ? 'sound.off' : 'sound.on'); };
 $('#mReset').onclick = () => {
-  if (!confirm(tr('reset.confirm'))) return;
+  if (!confirm(tr('reset.confirm', { name: spotName() }))) return;
   S = Object.assign({}, DEFAULT, { unlocked:[], last:now(), mute:S.mute, k:newKush() }); save(); modal.hidden = true; hidePane(); syncChars();
   toast(tr('t.newEgg'));
 };
@@ -944,7 +962,7 @@ $('#mReset').onclick = () => {
 function applyLang(){
   document.documentElement.lang = LANG === 'es' ? 'es-MX' : 'en';
   document.title = tr('title');
-  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = tr(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = tr(el.dataset.i18n, { name: petName() }); });
   document.querySelectorAll('[data-i18n-aria]').forEach(el => el.setAttribute('aria-label', tr(el.dataset.i18nAria)));
   document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = tr(el.dataset.i18nTitle); });
   document.querySelectorAll('[data-lang]').forEach(b => {
@@ -974,10 +992,13 @@ const kushAsleep = () => S.k.nap || (!clockNight() && now() >= (S.k.wokenUntil |
 const INTRO_MS = 4300;
 let kushIntro = null;
 function startKushIntro(){ kushIntro = { t0: now(), s1:false, s2:false, s3:false }; }
+const CHAR_INFO = { spot:{ icon:'🐾', key:'info' }, kush:{ icon:'🐈‍⬛', key:'info.cats' }, lawr:{ icon:'☁️', key:'info.heaven' } };   // cómo se llama el botón de arriba según el personaje
 function syncChars(){
   document.querySelectorAll('[data-char]').forEach(b => {
     const on = b.dataset.char === S.char; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
   });
+  const ci = CHAR_INFO[S.char] || CHAR_INFO.spot, bi = $('#bInfo');
+  bi.querySelector('span').textContent = ci.icon; const lab = bi.querySelector('i'); lab.dataset.i18n = ci.key; lab.textContent = tr(ci.key);
   hudAt = 0;
 }
 function setChar(c){
@@ -2050,7 +2071,6 @@ function render(){
   if (S.char === 'kush') return renderKush(t,fr);
   const st = stageOf(), pal = S.sleeping ? PAL.night : PAL.day;
   drawScene(pal,t,fr,S.sleeping,S.poops);
-  { const a0 = curAnim(); if (a0 && a0.type === 'eatlight') dimBuf(SCENE, lightK(now() - a0.t0, a0.dur)); }      // Tops se come la luz: el escenario se apaga
   const p = pose(fr,t);
   if (st==='egg') { drawEgg(p,pal); }
   else { drawDog(p,pal,st,fr,t); }
@@ -2268,7 +2288,7 @@ function resolveEscape(){                       // regañaron a Spot: regresa y 
   else ESC.stage = 0;
   N = null; S.escape = 0; hudAt = 0;
   S.happy = clamp(S.happy - 2); gain(3); attend(2); startAnim('sorry', 1800); sfx('happy');
-  toast(tr(fallen ? 't.escapeBack' : 't.scoldGood', { name:'Spot' })); save();
+  toast(tr(fallen ? 't.escapeBack' : 't.scoldGood', { name: spotName() })); save();
 }
 function forceClearEscape(){ ESC.stage = 0; N = null; S.escape = 0; escCv.hidden = true; restoreButtons(); }
 function drawEscape(){                          // Spot FUERA de la pantalla: su dibujo viaja por encima del aparato hasta los botones
@@ -2295,13 +2315,16 @@ function scold(){
   if (asleepNow()) return toast(trp('t.shh'));
   if (!isKush() && S.tops) { startAnim('no', 900); return toast(tr('t.scoldTops')); }          // Tops no reacciona
   const p = pet();
+  if (isKush()) {                                // a Kush le vale: ni se inmuta (ni culpa, ni sufre, ni afecta a Spot). Eso sí, la travesura se acaba.
+    N = null; startAnim('kushblink', 1500); toast(tr('t.scoldKush')); hudAt = 0; return;
+  }
   if (N) {                                       // había travesura: regaño merecido
     N = null; startAnim('sorry', 1800); sfx('happy'); p.happy = clamp(p.happy - 2); gain(3); if (!isKush()) attend(2);
     toast(trp('t.scoldGood')); hudAt = 0; save(); return;
   }
   p.happy = clamp(p.happy - 12); sfx('no'); startAnim('scolded', 1600);                          // regaño SIN motivo
   if (isKush()) { toast(tr('t.scoldKush')); S.neglect = Math.min(100, (S.neglect || 0) + 6); }  // maltratar a su amiga: Spot lo resiente
-  else { toast(tr('t.scoldUnjust', { name:'Spot' })); S.neglect = Math.min(100, (S.neglect || 0) + 14); SPOT.anger = 1; }
+  else { toast(tr('t.scoldUnjust', { name: spotName() })); S.neglect = Math.min(100, (S.neglect || 0) + 14); SPOT.anger = 1; }
   neglectCheck(); save();
 }
 
