@@ -580,11 +580,10 @@ function advancePet(p, name, min, away, sl){
     if (p.sickAcc >= SICK_AFTER_MIN) { p.sick = true; p.sickAcc = 0; toast(tr('t.sick', { name })); sfx('no'); }
   }
 }
-let topsHold = 0;                           // mientras la app está a oscuras comiendo luz, Tops no cambia todavía (cambia EN la oscuridad)
-function neglectCheck(){                   // cruza los umbrales: Spot → Tops → de vuelta a Spot
+function neglectCheck(){                  // cruza los umbrales: Spot → Tops → de vuelta a Spot
   if (!S.hatched) return;
   if (!S.tops && S.neglect >= 100) { S.tops = true; startAnim('tops', 1800); sfx('no'); toast(tr('t.toTops')); }
-  else if (S.tops && S.neglect <= 55 && now() >= topsHold) {          // vuelve a Spot… y ya sin glitch pesado (no se queda "medio Tops")
+  else if (S.tops && S.neglect <= 55) {         // vuelve a Spot… y ya sin glitch pesado (no se queda "medio Tops")
     S.tops = false; S.neglect = Math.min(S.neglect, 25); startAnim('tops', 1800); sfx('fanfare'); toast(tr('t.fromTops'));
   }
 }
@@ -712,8 +711,8 @@ function feed(id){
   hidePane();
   if (id === 'light') {
     if (!S.tops || isKush() || now() < blackoutUntil) return;      // (mientras dura el apagón no se le puede dar otra vez)
-    S.hunger = S.happy = S.energy = 100; attend(45);               // la luz lo llena COMPLETO (y casi lo regresa a Spot: lo hace en plena oscuridad)
-    topsHold = now() + BLACK_FADE + 200; setTimeout(() => { topsHold = 0; neglectCheck(); save(); }, BLACK_FADE + 200);
+    if (S.hunger >= 90) { startAnim('no', 900); sfx('no'); return toast(tr('t.notHungry', { name: spotName() })); }   // ya comió: una vez y ya
+    S.hunger = 100;                                                // la luz SOLO le quita el hambre (el cariño y el sueño no se arreglan comiendo)
     startAnim('eatlight', 3200); sfx('drain'); lightsOut();
     save(); return;
   }
