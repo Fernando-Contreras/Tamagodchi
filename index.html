@@ -337,7 +337,7 @@ const DOGERHOOD = [                  // (nombre, raza, rol y origen están en I1
 const I18N = {
   en: {
     title:'The Dog God · Tamagodchi', 'aria.canvas':'Spot, the Dog God', close:'Close',
-    feed:'Feed', play:'Play', light:'Light', clean:'Clean', med:'Medicine', info:'Dogerhood',
+    feed:'Feed', play:'Play', light:'Light', wake:'Wake up', sleep:'Sleep', clean:'Clean', med:'Medicine', info:'Dogerhood',
     'bar.hunger':'Hunger', 'bar.happy':'Happiness', 'bar.energy':'Energy',
     foot:'Made by JuanFer',
     'stage.egg':'Cloud egg', 'stage.cachorro':'Cloud pup', 'stage.spot':'Spot', 'stage.dios':'Spot, the Dog God',
@@ -419,7 +419,7 @@ const I18N = {
   },
   es: {
     title:'The Dog God · Tamagodchi', 'aria.canvas':'Spot, el Dios Perro', close:'Cerrar',
-    feed:'Comer', play:'Jugar', light:'Luz', clean:'Limpiar', med:'Medicina', info:'Dogerhood',
+    feed:'Comer', play:'Jugar', light:'Luz', wake:'Despertar', sleep:'Dormir', clean:'Limpiar', med:'Medicina', info:'Dogerhood',
     'bar.hunger':'Hambre', 'bar.happy':'Alegría', 'bar.energy':'Energía',
     foot:'Hecho por JuanFer',
     'stage.egg':'Huevo de nube', 'stage.cachorro':'Cachorro de nube', 'stage.spot':'Spot', 'stage.dios':'Spot, el Dios Perro',
@@ -580,10 +580,13 @@ function advancePet(p, name, min, away, sl){
     if (p.sickAcc >= SICK_AFTER_MIN) { p.sick = true; p.sickAcc = 0; toast(tr('t.sick', { name })); sfx('no'); }
   }
 }
-function neglectCheck(){                    // cruza los umbrales: Spot → Tops → de vuelta a Spot
+let topsHold = 0;                           // mientras la app está a oscuras comiendo luz, Tops no cambia todavía (cambia EN la oscuridad)
+function neglectCheck(){                   // cruza los umbrales: Spot → Tops → de vuelta a Spot
   if (!S.hatched) return;
   if (!S.tops && S.neglect >= 100) { S.tops = true; startAnim('tops', 1800); sfx('no'); toast(tr('t.toTops')); }
-  else if (S.tops && S.neglect <= 55) { S.tops = false; startAnim('tops', 1800); sfx('fanfare'); toast(tr('t.fromTops')); }
+  else if (S.tops && S.neglect <= 55 && now() >= topsHold) {          // vuelve a Spot… y ya sin glitch pesado (no se queda "medio Tops")
+    S.tops = false; S.neglect = Math.min(S.neglect, 25); startAnim('tops', 1800); sfx('fanfare'); toast(tr('t.fromTops'));
+  }
 }
 function advance(min, away){
   if (min <= 0) return;
@@ -709,7 +712,8 @@ function feed(id){
   hidePane();
   if (id === 'light') {
     if (!S.tops || isKush() || now() < blackoutUntil) return;      // (mientras dura el apagón no se le puede dar otra vez)
-    S.happy = clamp(S.happy + 12); attend(6);
+    S.hunger = S.happy = S.energy = 100; attend(45);               // la luz lo llena COMPLETO (y casi lo regresa a Spot: lo hace en plena oscuridad)
+    topsHold = now() + BLACK_FADE + 200; setTimeout(() => { topsHold = 0; neglectCheck(); save(); }, BLACK_FADE + 200);
     startAnim('eatlight', 3200); sfx('drain'); lightsOut();
     save(); return;
   }
@@ -840,7 +844,8 @@ function toggleLight(){
     if (kushAsleep()) {
       if (k.energy >= 99) { k.nap = false; k.wokenUntil = now() + 2*3600*1000; sfx('mew'); hudAt = 0; save(); }
       else startAnim('kushpeek', 1300);
-    } else startAnim('kushblink', 700);
+    } else if (k.energy >= 85) { startAnim('kushblink', 900); toast(tr('t.notSleepy', { name: 'Kush' })); }       // despierta: el botón es DORMIR, pero solo si de veras tiene sueño
+    else { k.nap = true; k.wokenUntil = 0; sfx('mew'); toast(tr('t.goodnight', { name: 'Kush' })); hudAt = 0; save(); }
     return;
   }
   if (S.sleeping) { S.sleeping = false; toast(tr('t.woke', { name: spotName() })); if (S.energy < 40) S.happy = clamp(S.happy - 5); }
@@ -882,7 +887,10 @@ function petSpot(){
   const lol = S.happy >= 65 && now() > xdCool;                   // la risa XD no es automática: solo si está de buenas y máx. cada 30 s
   if (lol) xdCool = now() + 30000;
   startAnim('pet', 1500, { xd: lol && !S.tops }); spawnHearts(3); sfx(S.tops ? 'no' : 'bark');      // Tops no tiene boca: no ladra
-  if (now() > petAttendAt) { attend(3); petAttendAt = now() + 4000; }
+  if (now() > petAttendAt) {                                      // a Tops el cariño le hace MUCHO más: unas 8 caricias seguidas y vuelve a ser Spot
+    attend(S.tops ? 6 : 3); petAttendAt = now() + (S.tops ? 900 : 4000);
+    if (S.tops) neglectCheck();
+  }
   S.happy = clamp(S.happy + 2);
   if (S.happy < 95 && S.ageMin - S.lastPetDevo > 5) { S.lastPetDevo = S.ageMin; addDevotion(1); }
   save();
@@ -2121,6 +2129,9 @@ function updateHud(){
   $('#bMed').classList.toggle('alert', ready && p.sick);
   $('#bPlay').classList.toggle('alert', ready && !sl && !p.sick && p.happy < 25 && p.energy >= 20);
   $('#bLight').classList.toggle('alert', ready && !kush && !sl && p.energy < 20);
+  // el botón de la luz de Kush: dormida → "Despertar" (☀️, y al despertar es de noche); despierta → "Dormir" (🌙, por si tiene sueño)
+  { const lk = kush ? (sl ? 'wake' : 'sleep') : 'light', b = $('#bLight'), lab = b.querySelector('i');
+    if (lab.dataset.i18n !== lk) { lab.dataset.i18n = lk; lab.textContent = tr(lk); b.querySelector('span').textContent = { light:'💡', wake:'☀️', sleep:'🌙' }[lk]; } }
 }
 
 /* =====================================================================
@@ -2183,7 +2194,7 @@ function glitchLoop(){
 function glitchTarget(){
   if (S.calm || !S.hatched) return 0;
   const nz = Math.min(1, (S.neglect || 0) / 100);
-  let v = S.tops ? 1 : nz < .2 ? 0 : Math.pow((nz - .2) / .8, 1.1) * .9;
+  let v = S.tops ? .4 + .6 * Math.max(0, Math.min(1, ((S.neglect || 0) - 55) / 45)) : nz < .2 ? 0 : Math.pow((nz - .2) / .8, 1.1) * .9;   // Tops: se calma conforme le das cariño
   if (S.sick) v = Math.max(v, nz >= .5 ? .75 : .4);
   return v;
 }
